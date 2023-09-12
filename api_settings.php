@@ -78,7 +78,7 @@ define("APIKEY_DEFAULT_OPTIONS", [
     "allowedEndpoints"    => ["*"],
     "disallowedEndpoints" => [],
     "noTimeOut"           => false,
-    "timeOutSecs"         => COOLDOWN_TIME,
+    "cooldown"            => COOLDOWN_TIME,
     "notify"              => true,
 ]);
 

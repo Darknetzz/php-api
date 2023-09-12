@@ -107,8 +107,8 @@ function funnyResponse(string $type, array $vars = []) : string {
         "WRONG_PARAM_COUNT" => [
             "default" => "Wrong amount of parameters given. Endpoint '$func' has $allParamCount available parameters ($requiredParamCount required). you provided $paramsCleanCount.",
             "funny" => [
-                "Wait a minute, you specified $specifiedParams, but this endpoint requires $requiredParams of them...",
-                "Alright now you are confusing me... I need $requiredParams parameters for this function to work, but for some reason you gave me only $specifiedParams.",
+                "Wait a minute, you specified $paramsCleanCount, but this endpoint requires $requiredParamCount of them...",
+                "Alright now you are confusing me... I need $requiredParamCount parameters for this function to work, but for some reason you gave me only $paramsCleanCount.",
             ],
         ],
         "ENDPOINT_FALSY" => [
@@ -245,6 +245,7 @@ function callFunction(string $func, array $params = []) {
 
         $args = $params;
         $apikey = (var_assert($params["apikey"]) ? $params["apikey"] : "all");
+        $apikey_options = (var_assert($apikey_options) ? $apikey_options : APIKEY_DEFAULT_OPTIONS);
         $endpoint = (var_assert($params["endpoint"]) ? $params["endpoint"] : null);
 
         if (!var_assert($endpoint)) {
@@ -339,8 +340,13 @@ function callFunction(string $func, array $params = []) {
             return err("The endpoint '$func' returned an empty/false response.");
         }
 
-        if (API_KEYS[$valid_apikey]["options"]["notify"] != false) {
-            api_sms(NOTIFY_NUMBER, "API Called by $valid_apikey: $args[endpoint]");
+        if (NOTIFY_API == true) {
+            if (API_KEYS[$valid_apikey]["options"]["notify"] != false) {
+                api_sms(NOTIFY_NUMBER, "API Called by $valid_apikey: $args[endpoint]");
+            }
+            if (empty($valid_apikey)) {
+                api_sms(NOTIFY_NUMBER, "API Called by unknown user: $args[endpoint]");
+            }
         }
 
         return api_response(status: "OK", data: ["response" => $functionCall, "verboseInfo" => $verboseInfo]);
