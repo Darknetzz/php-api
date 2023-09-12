@@ -30,7 +30,7 @@ $apikeys = [];
 # Uncomment and tweak it to your likings.
 # This will enable the API key with the options provided.
 # Please, for the love of god, do not reuse these keys, generate your own here:
-# http://ubuntu01/rand/#rsgen
+# https://ubuntu.roste.org/rand/#rsgen
 
 /*
 addAPIKey(
