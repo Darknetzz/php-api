@@ -1,7 +1,7 @@
 # php_api
 A simple but customizable API written in PHP.
 
-#### You can start using this on your webserver:
+## You can start using this on your webserver:
 ```
 root@ubuntu:~# cd /var/www/html
 root@ubuntu:/var/www/html/# git clone https://github.com/Darknetzz/php_api.git
@@ -9,7 +9,7 @@ root@ubuntu:/var/www/html/# git clone https://github.com/Darknetzz/php_api.git
 And that's it!
 All you need to do now is configure it to your likings.
 
-#### File summary
+## File summary
 | File | Description |
 | --- | --- |
 | api_endpoints.php | This is where you specify your endpoints. |
