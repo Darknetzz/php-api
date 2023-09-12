@@ -18,7 +18,7 @@ available options:
     | allowedEndpoints    | ["*"]         | Endpoints this key has access to. If there is a * in the array the key will be unrestricted.            |
     | disallowedEndpoints | []            | Endpoints this key specifically doesn't have access to, will override allowedEndpoints                  |
     | noTimeOut           | false         | Specify if this key can bypass the timeout                                                              |
-    | timeOutSecs         | COOLDOWN_TIME | Time in seconds this key has to wait between API calls (COOLDOWN_TIME is specified in api_settings.php) |
+    | cooldown            | COOLDOWN_TIME | Time in seconds this key has to wait between API calls (COOLDOWN_TIME is specified in api_settings.php) |
     | notify              | true          | Whether or not to notify the owner of this API when an endpoint is used.                                |
 */
 
