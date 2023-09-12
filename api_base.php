@@ -312,7 +312,7 @@ function callFunction(string $func, array $params = []) {
             ];
 
         # Error: Wrong amount of parameters given
-        if ($paramsCleanCount != $requiredParamCount) {
+        if ($paramsCleanCount < $requiredParamCount) {
             return err(funnyResponse(
                 "WRONG_PARAM_COUNT", [
                     "endpoint"              => $func,
