@@ -16,3 +16,4 @@ All you need to do now is configure it to your likings.
 | api_settings.php  | You can change some default settings here.|
 | api_keys.php      | Put your securely generated API keys here. Pro tip: (Use a generator!)[https://server.roste.org/rand/#rsgen] |
 | api_aliases.php   | This is where you specify aliases for your endpoints. That means an endpoint can have several names. |
+| api_base.php      | The most fundamental functions. Don't change this file unless you know what you are doing. |
