@@ -17,7 +17,7 @@ All you need to do now is configure it to your likings, in order to do this, you
 
 ### API Keys
 The first thing you should do is create an API key you can use.
-Open up `api_keys.php` to do this. You can generate a key from somewhere like [roste.org]([https://roste.org/rand](https://roste.org/rand/#rsgen))
+Open up `api_keys.php` to do this. You can generate a key from somewhere like [roste.org](https://roste.org/rand/#rsgen)
 
 Add your generated and secure key in the file like so:
 ````
