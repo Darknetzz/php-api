@@ -5,8 +5,8 @@ A simple but customizable API written in PHP.
 
 You can start using this on your webserver by simply cloning this repository to your webroot folder:
 ```
-root@ubuntu:~# cd /var/www/html
-root@ubuntu:/var/www/html/# git clone https://github.com/Darknetzz/php_api.git
+$ cd /var/www/html
+$ git clone https://github.com/Darknetzz/php_api.git
 ```
 
 You have now installed the API to https://ubuntu/php_api
