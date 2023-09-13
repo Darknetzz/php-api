@@ -16,6 +16,9 @@ You have now installed the API to https://<YOUR_SERVER>/php_api
 All you need to do now is configure it to your likings, in order to do this, you need to take a look at the included files.
 
 ### API Keys
+
+> :warning: **Please do not reuse API keys found anywhere!**: Generate your own!
+
 The first thing you should do is create an API key you can use.
 Open up `api_keys.php` to do this. You can generate a key from somewhere like [roste.org](https://roste.org/rand/#rsgen)
 
