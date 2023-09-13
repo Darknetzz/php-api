@@ -58,7 +58,9 @@ Take a look at `api_aliases.php`, it should be quite self explanatory.
 ## Using the API
 To query the API, you can use tools like cURL.
 
-`curl -X GET -H "Content-Type: application/json" https://<YOUR_SERVER>/php_api/?apikey=nrTv7xL6qyoOhWH7VBoh0Fs9JwChcoBNLhj1Us7l7zQKENBT0N8cZwDwB48YPdRL&endpoint=ip`
+````
+`$ curl -X GET -H "Content-Type: application/json" https://<YOUR_SERVER>/php_api/?apikey=nrTv7xL6qyoOhWH7VBoh0Fs9JwChcoBNLhj1Us7l7zQKENBT0N8cZwDwB48YPdRL&endpoint=ip
+````
 
 ## File summary
 | File | Description |
