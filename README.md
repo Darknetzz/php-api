@@ -4,7 +4,7 @@ A simple but customizable API written in PHP.
 ## Installing
 
 You can start using this on your webserver by simply cloning this repository to your webroot folder:
-```
+```bash
 $ cd /var/www/html
 $ git clone https://github.com/Darknetzz/php_api.git
 ```
@@ -22,7 +22,7 @@ All you need to do now is configure it to your likings, in order to do this, you
 The first thing you should do is create an API key you can use.
 
 Open up `api_keys.php` and add your generated and secure key in the file like so:
-````
+````php
 addAPIKey(
     name: "MasterKey",
     key: "nrTv7xL6qyoOhWH7VBoh0Fs9JwChcoBNLhj1Us7l7zQKENBT0N8cZwDwB48YPdRL",
@@ -47,7 +47,7 @@ addAPIKey(
 To create an endpoint that you can talk to, open up the file `api_endpoints.php`.
 
 Here is an example of an endpoint that returns the user's IP address.
-````
+````php
 function api_ip() {
     $ip = (!empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
     return ["ip" => $ip];
@@ -60,7 +60,7 @@ Take a look at `api_aliases.php`, it should be quite self explanatory.
 ## Using the API
 To query the API, you can use tools like cURL.
 
-````
+````bash
 `$ curl -X GET -H "Content-Type: application/json" https://<YOUR_SERVER>/php_api/?apikey=nrTv7xL6qyoOhWH7VBoh0Fs9JwChcoBNLhj1Us7l7zQKENBT0N8cZwDwB48YPdRL&endpoint=ip
 ````
 
