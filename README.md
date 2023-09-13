@@ -9,7 +9,7 @@ $ cd /var/www/html
 $ git clone https://github.com/Darknetzz/php_api.git
 ```
 
-You have now installed the API to https://ubuntu/php_api
+You have now installed the API to https://<YOUR_SERVER>/php_api
 
 ## Configuring
 
