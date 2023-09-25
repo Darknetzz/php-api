@@ -7,12 +7,7 @@
 
 header('Content-type: application/json;'); 
 
-# require_once(ASSETS_FOLDER.'/includes/sqlcon.php');
-require_once('api_settings.php');
-require_once('api_base.php');
-require_once('api_endpoints.php');
-include_once('api_keys.php');
-include_once('api_aliases.php');
+require_once('api_includes.php');
 
 if ($_SERVER['REQUEST_METHOD'] == "POST") {
     $args = $_POST;

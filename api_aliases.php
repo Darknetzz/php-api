@@ -29,7 +29,7 @@ foreach ($aliases as $funcName => $aliases) {
                 // echo "setting function $funcName as $alias<br>";
                 $use = "use function $funcName as $alias;";
                 eval($use);
-            }
         }
+    }
 }
 ?>

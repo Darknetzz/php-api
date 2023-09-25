@@ -25,7 +25,7 @@ define("HTTP_STATUS_CODES", [
 define("DEFAULT_FILTER"      , null);
 define("DEFAULT_JSON_COMPACT", false);
 define("VERBOSE_API"         , false); # appends additional information to json response (soon)
-define("NOTIFY_API"          , true); # notifiy API usage on SMS (unless API key has notify == false)
+define("NOTIFY_API"          , false); # notifiy API usage on SMS (unless API key has notify == false)
 define("NOTIFY_NUMBER"       , "12345678");
 
 define("GLOBAL_PARAMS",
@@ -79,7 +79,7 @@ define("APIKEY_DEFAULT_OPTIONS", [
     "disallowedEndpoints" => [],
     "noTimeOut"           => false,
     "cooldown"            => COOLDOWN_TIME,
-    "notify"              => true,
+    "notify"              => false,
 ]);
 
 /* ────────────────────────────────────────────────────────────────────────── */
