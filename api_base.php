@@ -362,7 +362,11 @@ function secondsSinceLastCalled($function_name, $apikey = "all") {
     try {
             $json_contents = file_get_contents(LAST_CALLED_JSON);
             $lf = json_decode($json_contents, true);
-            $apikey_name = (apikey_validate($apikey) ? apikey_validate($apikey) : "all");
+            
+            $apikey_name = $apikey;
+            if ($apikey != "all") {
+                $apikey_name = apikey_validate($apikey);
+            }
 
             if (!var_assert($lf[$function_name])) {
                 $lastcalled = (NOW - COOLDOWN_TIME);
@@ -425,7 +429,10 @@ function updateLastCalled($function_name, $apikey = "all") {
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                                  NOTE: Function in_md_array */
 /* ────────────────────────────────────────────────────────────────────────── */
-function in_md_array($name, $id, $array) {
+function in_md_array($name, $id, $array = API_KEYS) {
+    if (!is_array($array)) {
+        die(err("The API_KEYS constant isn't a valid array."));
+    }
     foreach ($array as $key => $val) {
         if ($val[$name] == $id) {
             return $key;
@@ -438,7 +445,7 @@ function in_md_array($name, $id, $array) {
 /*                                  NOTE: Function apikey_validate */
 /* ────────────────────────────────────────────────────────────────────────── */
 function apikey_validate($apikey) {
-    return in_md_array("key", $apikey, API_KEYS);
+    return in_md_array("key", $apikey);
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */

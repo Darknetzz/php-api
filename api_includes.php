@@ -8,22 +8,18 @@ $includes = [
 ];
 
 foreach ($includes as $include) {
-    # Custom variant
+    # Custom
     $custom = 'custom_'.$include.'.php';
 
     # Default
     $default = $include.'.php';
 
     if (file_exists($custom)) {
-        define(strtoupper($include), $custom);
+        require_once($custom);
+    } elseif (file_exists($default)) {
+        require_once($default);
     } else {
-        define(strtoupper($include), $default);
+        die("Failed to include $include<br>");
     }
 }
-
-require_once(API_SETTINGS);
-require_once(API_BASE);
-require_once(API_ENDPOINTS);
-require_once(API_KEYS);
-require_once(API_ALIASES);
 ?>
