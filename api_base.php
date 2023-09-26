@@ -51,6 +51,14 @@ function var_assert(mixed &$var, mixed $assertVal = false, bool $lazy = false) :
 
 
 /* ────────────────────────────────────────────────────────────────────────── */
+/*                                 Get user IP                                */
+/* ────────────────────────────────────────────────────────────────────────── */
+function userIP() {
+    return (!empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
+}
+
+
+/* ────────────────────────────────────────────────────────────────────────── */
 /*                                  NOTE: Function funnyResponse */
 /* ────────────────────────────────────────────────────────────────────────── */
 function funnyResponse(string $type, array $vars = []) : string {
@@ -244,7 +252,7 @@ function callFunction(string $func, array $params = []) {
     try {
 
         $args = $params;
-        $apikey = (var_assert($params["apikey"]) ? $params["apikey"] : "all");
+        $apikey = (var_assert($params["apikey"]) ? $params["apikey"] : userIP());
         $apikey_options = (var_assert($apikey_options) ? $apikey_options : APIKEY_DEFAULT_OPTIONS);
         $endpoint = (var_assert($params["endpoint"]) ? $params["endpoint"] : null);
 
@@ -271,6 +279,9 @@ function callFunction(string $func, array $params = []) {
                 die(err("You do not have access to this endpoint.", 403));
             }
 
+        # This is an open endpoint
+        } else {
+            $valid_apikey = userIP();
         }
 
         if (!function_exists($func)) {
@@ -300,7 +311,7 @@ function callFunction(string $func, array $params = []) {
             
 
             if (!$secondsSinceLastCalled) {
-                die(err("Function secondsSinceLastCalled() failed"));
+                die(err("Function secondsSinceLastCalled() failed. Please stop spamming this API."));
             }
 
             $verboseInfo = [
@@ -363,8 +374,9 @@ function secondsSinceLastCalled($function_name, $apikey = "all") {
             $json_contents = file_get_contents(LAST_CALLED_JSON);
             $lf = json_decode($json_contents, true);
             
-            $apikey_name = $apikey;
-            if ($apikey != "all") {
+            if ($apikey == "all") {
+                $apikey_name = userIP();
+            } else {
                 $apikey_name = apikey_validate($apikey);
             }
 
@@ -408,11 +420,8 @@ function updateLastCalled($function_name, $apikey = "all") {
 
     # This endpoint is open
     if (in_array($function_name, OPEN_ENDPOINTS) || $apikey == "all") {
-        $apikey_name = "all";
-    }
-
-    # If endpoint is NOT open
-    if (!in_array($function_name, OPEN_ENDPOINTS)) {
+        $apikey_name = userIP();
+    } else {
         $apikey_name = apikey_validate($apikey);
     }
 
