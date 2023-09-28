@@ -32,9 +32,9 @@ define("LOG_FILE"            , 'api.log');  # file to write to (if LOG_ENABLE !=
 define("LOG_LEVEL"           , 'info');     # see below
 define("LOG_LEVELS"          ,  
     [
-        'warning' => 10,
-        'info'    => 20,
-        'verbose' => 30,
+        'WARNING' => 10,
+        'INFO'    => 20,
+        'VERBOSE' => 30,
     ]);
 
 define("GLOBAL_PARAMS",
@@ -84,11 +84,12 @@ define("COOLDOWN_TIME"   , 5);
 /*                           API Key default options                          */
 /* ────────────────────────────────────────────────────────────────────────── */
 define("APIKEY_DEFAULT_OPTIONS", [
-    "allowedEndpoints"    => ["*"],
-    "disallowedEndpoints" => [],
-    "noTimeOut"           => false,
-    "cooldown"            => COOLDOWN_TIME,
-    "notify"              => false,
+    "allowedEndpoints"    => ["*"],         # allowed endpoints ("*" = all endpoints)
+    "disallowedEndpoints" => [],            # forbid this key from an endpoint (will override allowedEndpoints)
+    "noTimeOut"           => false,         # allows this key to make unlimited requests with no cooldown
+    "cooldown"            => COOLDOWN_TIME, # default cooldown time
+    "notify"              => false,         # will notify you if you have set up SMS config
+    "log_write"           => true,          # enables write_log function where possible if LOG_ENABLE !== false
 ]);
 
 /* ────────────────────────────────────────────────────────────────────────── */

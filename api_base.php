@@ -17,6 +17,7 @@
 /*                                  NOTE: Function err */
 /* ────────────────────────────────────────────────────────────────────────── */
 function err(string $text, int $statusCode = 500, bool $fatal = true) {
+    log_write($text, 'verbose');
     http_response_code($statusCode);
     return json_encode(
         [
@@ -86,57 +87,68 @@ function fh_close(mixed &$fh) {
 /*                              NOTE: log_write()                             */
 /* ────────────────────────────────────────────────────────────────────────── */
 function log_write($txt, $level = 'info') {
+    if ($log_enable !== false) {
     try {
-        $log_level  = (defined('LOG_LEVEL')  ? LOG_LEVEL : 'info');
-        $log_enable = (defined('LOG_ENABLE') ? LOG_ENABLE : null);
-        $log_file   = (defined('LOG_FILE')   ? LOG_FILE   : 'api.log');
-        $errors     = "";
-
-        if ($log_enable === null) {
-            $errors .= 'Constant LOG_ENABLE undefined';
-        }
-        if ($log_file === null) {
-            $errors .= 'Constant LOG_FILE undefined';
-        }
-        if (!in_array($log_level, array_keys(LOG_LEVELS))) {
-            $errors .= "You have specified a LOG_LEVEL that doesn't exist in the LOG_LEVELS array: ".$log_level." not in ".implode(', ', array_keys(LOG_LEVELS));
-        }
-
-        if (!empty($errors)) {
-            die(err("Function log_write unable to write to log: $errors - the settings for log_write can be found in ".INCLUDE_API_SETTINGS));
-        }
-
-        if ($log_enable !== false) {
-
-            $thisLevel = LOG_LEVELS[$level];
-            $myLevel   = LOG_LEVELS[$log_level];
-    
-            if ($myLevel < $thisLevel) {
-                return;
-            }
-    
-            if (!file_exists($log_file)) {
-                touch($log_file);
-                $testwrite = file_put_contents($log_file, 'Testing write access');
-        
-                if (!$testwrite && !file_exists($log_file)) {
-                    die(err("Function log_write was unable to write to log. Check the permissions of the log file: $log_file"));
-                }
-        
-                unlink($log_file);
-            }
-    
-            $currLog = file_get_contents($log_file);
-            $writeLog = $currlog.userIP().": ".$txt."\n";
-    
-            $fh = fopen($log_file, 'w+');
-            fwrite($fh, $writeLog);
-            fh_close($fh);
+        global $apikey_logging;
+        if (!isset($apikey_logging) || !$apikey_logging === true) {
             return;
         }
+        $level        = strtoupper($level);
+        $log_level    = (defined('LOG_LEVEL')  ? strtoupper(LOG_LEVEL) : 'INFO');
+        $log_enable   = (defined('LOG_ENABLE') ? LOG_ENABLE    : null);
+        $log_file     = (defined('LOG_FILE')   ? LOG_FILE      : 'api.log');
+        $log_maxlines = (defined('LOG_MAXLINES') ? LOG_MAXLINES: 1000);
+
+        if (!in_array($log_level, array_keys(LOG_LEVELS))) {
+            die(err("You have specified a LOG_LEVEL that doesn't exist in the LOG_LEVELS array: ".$log_level." not in ".implode(', ', array_keys(LOG_LEVELS))));
+        }
+
+        $thisLevel = LOG_LEVELS[$level];
+        $myLevel   = LOG_LEVELS[$log_level];
+
+        if ($myLevel < $thisLevel) {
+            return;
+        }
+
+        if (!file_exists($log_file)) {
+            touch($log_file);
+            $testwrite = file_put_contents($log_file, 'Testing write access');
+    
+            if (!$testwrite && !file_exists($log_file)) {
+                die(err("Function log_write was unable to write to log. Check the permissions of the log file: $log_file"));
+            }
+    
+            unlink($log_file);
+            $currLog = "Logfile created at ".date('Y-m-d H:i:s')."\n";
+        } else {
+
+            $lines = file($log_file);
+            while ($log_maxlines - count($lines) < 0) {
+
+            }
+
+            $fh      = fopen($log_file, 'w+');
+            $currLog = fread($fh);
+            $lines   = 0;
+            while (!feof($fh)) {
+                $line = fgets($fh);
+                $lines++;
+            }
+            while ($log_maxlines - $lines > 0) {
+
+            }
+        }
+
+        $writeLog = $currLog."[$level] ".userIP().": ".$txt."\n";
+
+        $fh = fopen($log_file, 'w+');
+        fwrite($fh, $writeLog);
+        fh_close($fh);
+        return;
     } catch(Throwable $t) {
         die(err("Unable to write to log: $t"));
     }
+}
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -348,6 +360,7 @@ function callFunction(string $func, array $params = []) {
 
         # Set valid_apikey to 'all' (will be overwritten if endpoint not open)
         $valid_apikey = 'all';
+        $apikey_logging = true;
 
         if (!var_assert($endpoint)) {
             die(err("No endpoint was provided"));
@@ -373,6 +386,7 @@ function callFunction(string $func, array $params = []) {
                 die(err("The options for this API key cannot be found"));
             }
             $apikey_options = API_KEYS[$valid_apikey]['options'];
+            $apikey_logging = $apikey_options['log_write'];
 
             if (in_array($endpoint, $apikey_options["disallowedEndpoints"])) {
                 die(err("You are blacklisted/disallowed from using this endpoint."));
@@ -438,6 +452,7 @@ function callFunction(string $func, array $params = []) {
         updateLastCalled($func, $valid_apikey);
 
         if (!$functionCall) {
+
             return err("The endpoint '$func' returned an empty/false response.");
         }
 
