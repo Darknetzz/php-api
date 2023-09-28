@@ -87,7 +87,7 @@ function fh_close(mixed &$fh) {
 /*                              NOTE: log_write()                             */
 /* ────────────────────────────────────────────────────────────────────────── */
 function log_write($txt, $level = 'info') {
-    if ($log_enable !== false) {
+    if (isset($log_enable) && $log_enable !== false) {
     try {
         global $apikey_logging;
         if (!isset($apikey_logging) || !$apikey_logging === true) {
