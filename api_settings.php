@@ -27,6 +27,15 @@ define("DEFAULT_JSON_COMPACT", false);
 define("VERBOSE_API"         , false); # appends additional information to json response (soon)
 define("NOTIFY_API"          , false); # notifiy API usage on SMS (unless API key has notify == false)
 define("NOTIFY_NUMBER"       , "12345678");
+define("LOG_ENABLE"          , true);       # whether or not to enable logging API requests to a file
+define("LOG_FILE"            , 'api.log');  # file to write to (if LOG_ENABLE !== false)
+define("LOG_LEVEL"           , 'info');     # see below
+define("LOG_LEVELS"          ,  
+    [
+        'warning' => 10,
+        'info'    => 20,
+        'verbose' => 30,
+    ]);
 
 define("GLOBAL_PARAMS",
         [

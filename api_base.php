@@ -50,13 +50,94 @@ function var_assert(mixed &$var, mixed $assertVal = false, bool $lazy = false) :
 }
 
 
+
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                                 Get user IP                                */
 /* ────────────────────────────────────────────────────────────────────────── */
 function userIP() {
-    return (!empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        return $_SERVER['HTTP_X_FORWARDED_FOR'];
+    }
+    if (!empty($_SERVER['REMOTE_ADDR'])) {
+        return $_SERVER['REMOTE_ADDR'];
+    }
+    die(err("Unable to determine IP"));
 }
 
+/* ────────────────────────────────────────────────────────────────────────── */
+/*                               Close file                                   */
+/* ────────────────────────────────────────────────────────────────────────── */
+function fh_close(mixed &$fh) {
+    $tries = 5;
+    $i     = 0;
+    while (is_resource($fh)) {
+        if ($i > $tries) {
+            break;
+        }
+        
+        fclose($fh);
+        $i++;
+    }
+    
+    return !is_resource($fh);
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*                              NOTE: log_write()                             */
+/* ────────────────────────────────────────────────────────────────────────── */
+function log_write($txt, $level = 'info') {
+    try {
+        $log_level  = (defined('LOG_LEVEL')  ? LOG_LEVEL : 'info');
+        $log_enable = (defined('LOG_ENABLE') ? LOG_ENABLE : null);
+        $log_file   = (defined('LOG_FILE')   ? LOG_FILE   : 'api.log');
+        $errors     = "";
+
+        if ($log_enable === null) {
+            $errors .= 'Constant LOG_ENABLE undefined';
+        }
+        if ($log_file === null) {
+            $errors .= 'Constant LOG_FILE undefined';
+        }
+        if (!in_array($log_level, array_keys(LOG_LEVELS))) {
+            $errors .= "You have specified a LOG_LEVEL that doesn't exist in the LOG_LEVELS array: ".$log_level." not in ".implode(', ', array_keys(LOG_LEVELS));
+        }
+
+        if (!empty($errors)) {
+            die(err("Function log_write unable to write to log: $errors - the settings for log_write can be found in ".INCLUDE_API_SETTINGS));
+        }
+
+        if ($log_enable !== false) {
+
+            $thisLevel = LOG_LEVELS[$level];
+            $myLevel   = LOG_LEVELS[$log_level];
+    
+            if ($myLevel < $thisLevel) {
+                return;
+            }
+    
+            if (!file_exists($log_file)) {
+                touch($log_file);
+                $testwrite = file_put_contents($log_file, 'Testing write access');
+        
+                if (!$testwrite && !file_exists($log_file)) {
+                    die(err("Function log_write was unable to write to log. Check the permissions of the log file: $log_file"));
+                }
+        
+                unlink($log_file);
+            }
+    
+            $currLog = file_get_contents($log_file);
+            $writeLog = $currlog.userIP().": ".$txt."\n";
+    
+            $fh = fopen($log_file, 'w+');
+            fwrite($fh, $writeLog);
+            fh_close($fh);
+            return;
+        }
+    } catch(Throwable $t) {
+        die(err("Unable to write to log: $t"));
+    }
+}
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                                  NOTE: Function funnyResponse */
@@ -83,6 +164,7 @@ function funnyResponse(string $type, array $vars = []) : string {
         "allParamCount",
         "paramsCleanCount",
         "secondsSinceLastCalled",
+        "noTimeOut",
     ];
 
     if (!is_array($vars)) {
@@ -100,7 +182,6 @@ function funnyResponse(string $type, array $vars = []) : string {
     }
 
     /* ────────────────────────────────────────────────────────────────────────── */
-
 
     /* ────────────────────────────────── Types ───────────────────────────────── */
     $validTypes = [
@@ -162,6 +243,8 @@ function api_response(string $status, mixed $data) : string {
     
     global $_GET;
     $params = $_GET;
+
+    log_write("api_response(): The API responded with a status of $status.");
 
     $pretty_print = 0;
     if (var_assert(($options['compact']), true)) {
@@ -249,50 +332,57 @@ function api_response(string $status, mixed $data) : string {
 /* ────────────────────────────────────────────────────────────────────────── */
 function callFunction(string $func, array $params = []) {
 
-    try {
+    log_write("Attempting to call function $func with parameters: ".implode($params), 'verbose');
 
-        $args = $params;
-        $apikey = (var_assert($params["apikey"]) ? $params["apikey"] : userIP());
-        $apikey_options = (var_assert($apikey_options) ? $apikey_options : APIKEY_DEFAULT_OPTIONS);
+    try {
+        
+        /* ────────────────────────────────────────────────────────────────────────── */
+        /*                               Initial checks                               */
+        /* ────────────────────────────────────────────────────────────────────────── */
+        # REVIEW: I have no clue why this line below is here?
+        # Can this be removed/changed? The $apikey_options doesn't seem to be defined anywhere before this, so why assert?
+        // $apikey_options = (var_assert($apikey_options) ? $apikey_options : APIKEY_DEFAULT_OPTIONS);
+        
+        $apikey = (var_assert($params["apikey"]) ? $params["apikey"] : 'all');
         $endpoint = (var_assert($params["endpoint"]) ? $params["endpoint"] : null);
+
+        # Set valid_apikey to 'all' (will be overwritten if endpoint not open)
+        $valid_apikey = 'all';
 
         if (!var_assert($endpoint)) {
             die(err("No endpoint was provided"));
         }
-
-        # This is NOT an open endpoint
-        if (!in_array($args['endpoint'], OPEN_ENDPOINTS)) {
-
-            $valid_apikey = apikey_validate($apikey);
-
-            if (!var_assert($apikey) || !$valid_apikey) {
-                die(err("Invalid API key", 403));
-            }
-
-            $apikey_options = (isset(API_KEYS[$valid_apikey]["options"]) ? API_KEYS[$valid_apikey]["options"] : APIKEY_DEFAULT_OPTIONS);
-
-            if (in_array($args['endpoint'], $apikey_options["disallowedEndpoints"])) {
-                die(err("You are blacklisted/disallowed from using this endpoint."));
-            }
-        
-            if (!in_array("*", $apikey_options["allowedEndpoints"]) && !in_array($args['endpoint'], $apikey_options["allowedEndpoints"])) {
-                die(err("You do not have access to this endpoint.", 403));
-            }
-
-        # This is an open endpoint
-        } else {
-            $valid_apikey = userIP();
-        }
-
         if (!function_exists($func)) {
             return err("Invalid endpoint '$func'");
         }
+        /* ────────────────────────────────────────────────────────────────────────── */
 
-        foreach (APIKEY_DEFAULT_OPTIONS as $optVar => $optVal) {
-            if (!array_key_exists($optVar, $apikey_options)) {
-                $apikey_options[$optVar] = $optVal;
+        /* ────────────────────────────────────────────────────────────────────────── */
+        /*                            Not an open endpoint                            */
+        /* ────────────────────────────────────────────────────────────────────────── */
+        if (!in_array($endpoint, OPEN_ENDPOINTS)) {
+            $valid_apikey = apikey_validate($apikey);
+
+            if (!var_assert($valid_apikey) || !$valid_apikey) {
+                die(err("Invalid API key", 403));
+            }
+
+            # The API key default options are given to the API key when created: addAPIKey function
+            # You don't need to set defaults here, just check it directly in API_KEYS[$valid_apikey]['options']
+            if (empty(API_KEYS[$valid_apikey]['options'])) {
+                die(err("The options for this API key cannot be found"));
+            }
+            $apikey_options = API_KEYS[$valid_apikey]['options'];
+
+            if (in_array($endpoint, $apikey_options["disallowedEndpoints"])) {
+                die(err("You are blacklisted/disallowed from using this endpoint."));
+            }
+        
+            if (!in_array("*", $apikey_options["allowedEndpoints"]) && !in_array($endpoint, $apikey_options["allowedEndpoints"])) {
+                die(err("You do not have access to this endpoint.", 403));
             }
         }
+        /* ────────────────────────────────────────────────────────────────────────── */
 
         $paramsClean = [];
         foreach ($params as $paramName => $paramValue) {
@@ -307,10 +397,9 @@ function callFunction(string $func, array $params = []) {
             $requiredParamCount     = $functionObject-> getNumberOfRequiredParameters();
             $providedParamCount     = count($params);
             $paramsCleanCount       = count($paramsClean);
-            $secondsSinceLastCalled = secondsSinceLastCalled($func, $apikey);
+            $secondsSinceLastCalled = secondsSinceLastCalled($func, $valid_apikey);
             
-
-            if (!$secondsSinceLastCalled) {
+            if (!$secondsSinceLastCalled && $apikey_options['noTimeOut'] === false) {
                 die(err("Function secondsSinceLastCalled() failed. Please stop spamming this API."));
             }
 
@@ -334,29 +423,30 @@ function callFunction(string $func, array $params = []) {
         }
 
         # Error: Too quick!
-        if ($secondsSinceLastCalled < COOLDOWN_TIME && !$apikey_options["noTimeOut"]) {
+        if ($secondsSinceLastCalled < COOLDOWN_TIME && $apikey_options["noTimeOut"] === false) {
             return err(funnyResponse(
                 "COOLDOWN", [
                     "endpoint" => $func,
                     "secondsSinceLastCalled" => $secondsSinceLastCalled,
-                    "secondsToWait" => (COOLDOWN_TIME - $secondsSinceLastCalled)
+                    "secondsToWait" => (COOLDOWN_TIME - $secondsSinceLastCalled),
+                    "noTimeOut" => $apikey_options["noTimeOut"],
                 ]));
             // return err("The endpoint '$func' was called a mere ".$secondsSinceLastCalled." seconds ago! Please wait another ".(COOLDOWN_TIME - $secondsSinceLastCalled)." seconds.");
         }
 
         $functionCall = $functionObject->invoke(...$paramsClean);
-        updateLastCalled($func, $apikey);
+        updateLastCalled($func, $valid_apikey);
 
         if (!$functionCall) {
             return err("The endpoint '$func' returned an empty/false response.");
         }
 
-        if (NOTIFY_API == true) {
-            if (API_KEYS[$valid_apikey]["options"]["notify"] != false) {
+        if (NOTIFY_API === true) {
+            if (API_KEYS[$valid_apikey]["options"]["notify"] === true) {
                 api_sms(NOTIFY_NUMBER, "API Called by $valid_apikey: $args[endpoint]");
             }
             if (empty($valid_apikey)) {
-                api_sms(NOTIFY_NUMBER, "API Called by unknown user: $args[endpoint]");
+                api_sms(NOTIFY_NUMBER, "API Called by ".userIP().": $args[endpoint]");
             }
         }
 
@@ -374,7 +464,7 @@ function secondsSinceLastCalled($function_name, $apikey = "all") {
             $json_contents = file_get_contents(LAST_CALLED_JSON);
             $lf = json_decode($json_contents, true);
             
-            if ($apikey == "all") {
+            if (in_array($function_name, OPEN_ENDPOINTS) || $apikey == "all") {
                 $apikey_name = userIP();
             } else {
                 $apikey_name = apikey_validate($apikey);
@@ -390,8 +480,10 @@ function secondsSinceLastCalled($function_name, $apikey = "all") {
 
             return (NOW - $lastcalled);
 
-    } catch (Exception $e) {
-        return false;
+    } catch (Throwable $t) {
+        # This should not return false, makes it incredibly hard to troubleshoot permission error.
+        // return false;
+        die(err($t));
     }
 }
 
@@ -399,40 +491,49 @@ function secondsSinceLastCalled($function_name, $apikey = "all") {
 /*                                  NOTE: Function updateLastCalled */
 /* ────────────────────────────────────────────────────────────────────────── */
 function updateLastCalled($function_name, $apikey = "all") {
-    if (!file_exists(LAST_CALLED_JSON) || empty(file_get_contents(LAST_CALLED_JSON))) {
-        touch(LAST_CALLED_JSON);
-        $json_contents = "";
-    } else {
+    try {
+        if (!file_exists(LAST_CALLED_JSON)) {
+            touch(LAST_CALLED_JSON);
+        }
+
         $json_contents = file_get_contents(LAST_CALLED_JSON);
-    }
 
-    # Create empty array if file empty
-    if (!empty($json_contents)) {
-        $lf  = json_decode($json_contents, true);
-    } else {
-        $lf = [];
-    }
+        # Create empty array if file empty
+        if (empty($json_contents)) {
+            $json_contents = "";
+            $lf            = [];
+        } else {
+            $lf  = json_decode($json_contents, true);
+        }
 
-    # If function array exists in JSON file
-    if (!var_assert($lf[$function_name])) {
-        $lf[$function_name] = [];
-    }
+        # If function array doesn't exists in JSON file, create it
+        if (!var_assert($lf[$function_name])) {
+            $lf[$function_name] = [];
+        }
 
-    # This endpoint is open
-    if (in_array($function_name, OPEN_ENDPOINTS) || $apikey == "all") {
-        $apikey_name = userIP();
-    } else {
-        $apikey_name = apikey_validate($apikey);
-    }
+        # This endpoint is open
+        # NOTE: this part fails??
+        if (in_array($function_name, OPEN_ENDPOINTS) || $apikey == "all") {
+            $apikey_name = userIP();
+        } else {
+            $apikey_name = apikey_validate($apikey);
+        }
 
-    # Invalid API key somehow? This should be an uneccessary check as call_function() already checks it before this is called
-    if (!var_assert($apikey_name)) {
-        return false;
-    }
+        # Invalid API key somehow? This should be an uneccessary check as call_function() already checks it before this is called
+        if (!var_assert($apikey_name)) {
+            die(err("Function updateLastCalled for function $function_name failed, var_assert($apikey_name) returned falsy."));
+        }
 
-    $lf[$function_name][$apikey_name] = NOW;
-    file_put_contents(LAST_CALLED_JSON, json_encode($lf));
-    return true;
+        $lf[$function_name][$apikey_name] = NOW;
+
+        $fh = fopen(LAST_CALLED_JSON, 'w+');
+        fwrite($fh, json_encode($lf));
+        fh_close($fh);
+
+        return true;
+    } catch (Throwable $t) {
+        die(err($t));
+    }
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -454,7 +555,12 @@ function in_md_array($name, $id, $array = API_KEYS) {
 /*                                  NOTE: Function apikey_validate */
 /* ────────────────────────────────────────────────────────────────────────── */
 function apikey_validate($apikey) {
-    return in_md_array("key", $apikey);
+    $name = in_md_array("key", $apikey);
+    return $name;
+    if (!$name) {
+        die(err("Invalid key $apikey"));
+    }
+    return $name;
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -467,9 +573,17 @@ function addAPIKey(string $name, string $key, array $options = []) { # array $al
         $options = APIKEY_DEFAULT_OPTIONS;
     }
 
+    foreach ($options as $optName => $optVal) {
+
+    }
+
     foreach (APIKEY_DEFAULT_OPTIONS as $optName => $optVal) {
         if (!isset($options[$optName])) {
             $options[$optName] = APIKEY_DEFAULT_OPTIONS[$optName];
+            // echo "[DEFAULT $name: $optName = $options[$optName]]";
+        } else {
+            $options[$optName] = $options[$optName];
+            // echo "[CUSTOM $name: $optName = $options[$optName]]";
         }
     }
 
@@ -478,6 +592,8 @@ function addAPIKey(string $name, string $key, array $options = []) { # array $al
         "key" => $key, 
         "options" => $options,
     ];
+    // echo $name;
+    // print_r($options);
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
