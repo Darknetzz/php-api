@@ -351,10 +351,11 @@ function callFunction(string $func, array $params = []) {
         /* ────────────────────────────────────────────────────────────────────────── */
         /*                               Initial checks                               */
         /* ────────────────────────────────────────────────────────────────────────── */
-        # REVIEW: I have no clue why this line below is here?
-        # Can this be removed/changed? The $apikey_options doesn't seem to be defined anywhere before this, so why assert?
-        // $apikey_options = (var_assert($apikey_options) ? $apikey_options : APIKEY_DEFAULT_OPTIONS);
-        
+
+        # NOTE: It is in fact required, because:
+        # Undefined variable $apikey_options in /NAS3/Share/Code/PHP/php_api/api_base.php on line 440
+        # Trying to access array offset on value of type null in /NAS3/Share/Code/PHP/php_api/api_base.php on line 440
+        $apikey_options = (var_assert($apikey_options) ? $apikey_options : APIKEY_DEFAULT_OPTIONS);
         $apikey = (var_assert($params["apikey"]) ? $params["apikey"] : 'all');
         $endpoint = (var_assert($params["endpoint"]) ? $params["endpoint"] : null);
 
@@ -386,7 +387,7 @@ function callFunction(string $func, array $params = []) {
                 die(err("The options for this API key cannot be found"));
             }
             $apikey_options = API_KEYS[$valid_apikey]['options'];
-            $apikey_logging = $apikey_options['log_write'];
+            $apikey_logging = $apikey_options['log_write']; # this is used in log_write
 
             if (in_array($endpoint, $apikey_options["disallowedEndpoints"])) {
                 die(err("You are blacklisted/disallowed from using this endpoint."));
