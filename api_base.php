@@ -84,6 +84,18 @@ function fh_close(mixed &$fh) {
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
+/*                                endpoint_open                               */
+/* ────────────────────────────────────────────────────────────────────────── */
+function endpoint_open(string $endpoint) {
+    foreach (OPEN_ENDPOINTS as $openep) {
+        if ($endpoint == $openep || 'api_'.$endpoint == $openep) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
 /*                              NOTE: log_write()                             */
 /* ────────────────────────────────────────────────────────────────────────── */
 function log_write($txt, $level = 'info') {
@@ -107,6 +119,7 @@ function log_write($txt, $level = 'info') {
         $myLevel   = LOG_LEVELS[$log_level];
 
         if ($myLevel < $thisLevel) {
+            echo "$myLevel < $thisLevel";
             return;
         }
 
@@ -121,25 +134,33 @@ function log_write($txt, $level = 'info') {
             unlink($log_file);
             $currLog = "Logfile created at ".date('Y-m-d H:i:s')."\n";
         } else {
+            $padding   = max(array_map('strlen', LOG_LEVELS));
+            $plevel    = str_pad("[$level] ", $padding, ' ');
+            $prefix    = $plevel." ".userIP().": ";
 
-            $lines = file($log_file);
-            while ($log_maxlines - count($lines) < 0) {
-
+            $lines     = file($log_file);
+            $remainder = $log_maxlines - count($lines);
+            $currLine  = 0;
+            while ($remainder < 0) {
+                unset($lines[$currLine]);
+                $currLine++;
+                $remainder++;
             }
 
-            $fh      = fopen($log_file, 'w+');
-            $currLog = fread($fh);
-            $lines   = 0;
-            while (!feof($fh)) {
-                $line = fgets($fh);
-                $lines++;
-            }
-            while ($log_maxlines - $lines > 0) {
-
-            }
+            // $fh      = fopen($log_file, 'w+');
+            // $currLog = fread($fh);
+            // $lines   = 0;
+            // while (!feof($fh)) {
+            //     $line = fgets($fh);
+            //     $lines++;
+            // }
+            // while ($log_maxlines - $lines > 0) {
+                
+            //     $lines--;
+            // }
         }
 
-        $writeLog = $currLog."[$level] ".userIP().": ".$txt."\n";
+        $writeLog = $currLog.$prefix.$txt."\n";
 
         $fh = fopen($log_file, 'w+');
         fwrite($fh, $writeLog);
@@ -352,41 +373,60 @@ function callFunction(string $func, array $params = []) {
         /*                               Initial checks                               */
         /* ────────────────────────────────────────────────────────────────────────── */
 
-        # NOTE: It is in fact required, because:
-        # Undefined variable $apikey_options in /NAS3/Share/Code/PHP/php_api/api_base.php on line 440
-        # Trying to access array offset on value of type null in /NAS3/Share/Code/PHP/php_api/api_base.php on line 440
-        $apikey_options = (var_assert($apikey_options) ? $apikey_options : APIKEY_DEFAULT_OPTIONS);
-        $apikey = (var_assert($params["apikey"]) ? $params["apikey"] : 'all');
-        $endpoint = (var_assert($params["endpoint"]) ? $params["endpoint"] : null);
+        # defaults
+        $apikey         = null;
+        $apikey_options = null;
+        $apikey_logging = null;
+        $valid_apikey   = null;
 
-        # Set valid_apikey to 'all' (will be overwritten if endpoint not open)
-        $valid_apikey = 'all';
-        $apikey_logging = true;
-
-        if (!var_assert($endpoint)) {
+        # Check for endpoint param
+        if (!var_assert($params["endpoint"])) {
             die(err("No endpoint was provided"));
         }
+
+        $endpoint = $params["endpoint"];
+
+        # Verify existing endpoint
         if (!function_exists($func)) {
-            return err("Invalid endpoint '$func'");
+            die(err("Invalid endpoint '$func'"));
         }
+
+
+
         /* ────────────────────────────────────────────────────────────────────────── */
 
         /* ────────────────────────────────────────────────────────────────────────── */
         /*                            Not an open endpoint                            */
         /* ────────────────────────────────────────────────────────────────────────── */
-        if (!in_array($endpoint, OPEN_ENDPOINTS)) {
+        if (!endpoint_open($endpoint)) {
+
+            if (!var_assert($params['apikey'])) {
+                die(err("Missing required API key."));
+            }
+
+            # API key was provided
+            $apikey = $params['apikey'];
             $valid_apikey = apikey_validate($apikey);
 
-            if (!var_assert($valid_apikey) || !$valid_apikey) {
+            # Invalid API key
+            if (!$valid_apikey || empty($valid_apikey)) {
                 die(err("Invalid API key", 403));
             }
 
+
             # The API key default options are given to the API key when created: addAPIKey function
             # You don't need to set defaults here, just check it directly in API_KEYS[$valid_apikey]['options']
+
+            # Get options from this API key
             if (empty(API_KEYS[$valid_apikey]['options'])) {
                 die(err("The options for this API key cannot be found"));
             }
             $apikey_options = API_KEYS[$valid_apikey]['options'];
+
+            # Get logging option for this API key
+            if (empty($apikey_options['log_write'])) {
+                die(err("Option 'log_write' not specified for this API key."));
+            }
             $apikey_logging = $apikey_options['log_write']; # this is used in log_write
 
             if (in_array($endpoint, $apikey_options["disallowedEndpoints"])) {
@@ -475,26 +515,31 @@ function callFunction(string $func, array $params = []) {
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                                  NOTE: Function secondsSinceLastCalled */
 /* ────────────────────────────────────────────────────────────────────────── */
-function secondsSinceLastCalled($function_name, $apikey = "all") {
+function secondsSinceLastCalled($function_name, $valid_apikey = null) {
     try {
-            $json_contents = file_get_contents(LAST_CALLED_JSON);
-            $lf = json_decode($json_contents, true);
-            
-            if (in_array($function_name, OPEN_ENDPOINTS) || $apikey == "all") {
-                $apikey_name = userIP();
-            } else {
-                $apikey_name = apikey_validate($apikey);
-            }
 
-            if (!var_assert($lf[$function_name])) {
-                $lastcalled = (NOW - COOLDOWN_TIME);
-            } elseif (!var_assert($lf[$function_name][$apikey_name])) {
-                $lastcalled = (NOW - COOLDOWN_TIME);
-            } else {
-                $lastcalled = $lf[$function_name][$apikey_name];
-            }
+        $json_contents = file_get_contents(LAST_CALLED_JSON);
+        $lf = json_decode($json_contents, true);
+        
+        # This endpoint is open
+        if (endpoint_open($function_name) || $valid_apikey == null) {
+            $valid_apikey = userIP();
+        }
 
-            return (NOW - $lastcalled);
+        # Somehow the apikey_name is still empty
+        if (empty($valid_apikey)) {
+            die(err("updateLastCalled: This endpoint is either not open, or the api key you provided is null/invalid. IP: ".userIP()." - Name: $valid_apikey"));
+        }
+
+        if (!var_assert($lf[$function_name])) {
+            $lastcalled = (NOW - COOLDOWN_TIME);
+        } elseif (!var_assert($lf[$function_name][$valid_apikey])) {
+            $lastcalled = (NOW - COOLDOWN_TIME);
+        } else {
+            $lastcalled = $lf[$function_name][$valid_apikey];
+        }
+
+        return (NOW - $lastcalled);
 
     } catch (Throwable $t) {
         # This should not return false, makes it incredibly hard to troubleshoot permission error.
@@ -506,8 +551,9 @@ function secondsSinceLastCalled($function_name, $apikey = "all") {
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                                  NOTE: Function updateLastCalled */
 /* ────────────────────────────────────────────────────────────────────────── */
-function updateLastCalled($function_name, $apikey = "all") {
+function updateLastCalled($function_name, $valid_apikey = null) {
     try {
+
         if (!file_exists(LAST_CALLED_JSON)) {
             touch(LAST_CALLED_JSON);
         }
@@ -528,25 +574,23 @@ function updateLastCalled($function_name, $apikey = "all") {
         }
 
         # This endpoint is open
-        # NOTE: this part fails??
-        if (in_array($function_name, OPEN_ENDPOINTS) || $apikey == "all") {
-            $apikey_name = userIP();
-        } else {
-            $apikey_name = apikey_validate($apikey);
+        if (endpoint_open($function_name) || $valid_apikey == null) {
+            $valid_apikey = userIP();
         }
 
-        # Invalid API key somehow? This should be an uneccessary check as call_function() already checks it before this is called
-        if (!var_assert($apikey_name)) {
-            die(err("Function updateLastCalled for function $function_name failed, var_assert($apikey_name) returned falsy."));
+        # Somehow the valid_apikey is still empty
+        if (empty($valid_apikey)) {
+            die(err("updateLastCalled: This endpoint is either not open, or the api key you provided is null/invalid. IP: ".userIP()." - Name: $valid_apikey"));
         }
 
-        $lf[$function_name][$apikey_name] = NOW;
+        $lf[$function_name][$valid_apikey] = NOW;
 
         $fh = fopen(LAST_CALLED_JSON, 'w+');
         fwrite($fh, json_encode($lf));
         fh_close($fh);
 
         return true;
+
     } catch (Throwable $t) {
         die(err($t));
     }
