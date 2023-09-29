@@ -10,6 +10,17 @@
     It contains some default values that could be tweaked.
 */
 
+/* ────────────────────────────────────────────────────────────────────────── */
+/*                                   General                                  */
+/* ────────────────────────────────────────────────────────────────────────── */
+# Will redirect user to somewhere else than index.php if set to true
+# if there are no parameters given (endpoint, apikey etc.)
+define('ENABLE_CUSTOM_INDEX', false);
+
+# What page should the user be redirected to? Also supports full URLs
+# Example: 'https://example.com/wiki/api'
+define('CUSTOM_INDEX', 'custom_index.php');
+
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                              HTTP Status codes                             */
