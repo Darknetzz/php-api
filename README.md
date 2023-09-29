@@ -44,6 +44,7 @@ addAPIKey(
 | noTimeOut           | false         | Specify if this key can bypass the timeout                                                              |
 | timeout             | COOLDOWN_TIME | Time in seconds this key has to wait between API calls (COOLDOWN_TIME is specified in api_settings.php) |
 | notify              | true          | Whether or not to notify the owner of this API when an endpoint is used.                                |
+| log_write           | true          | Whether or not to write requests with this API key to a log file of your choosing.                      |
 
 ### Creating your first endpoint
 To create an endpoint that you can talk to, open up the file `api_endpoints.php`.
