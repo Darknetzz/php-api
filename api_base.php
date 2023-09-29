@@ -499,10 +499,10 @@ function callFunction(string $func, array $params = []) {
 
         if (NOTIFY_API === true) {
             if (API_KEYS[$valid_apikey]["options"]["notify"] === true) {
-                api_sms(NOTIFY_NUMBER, "API Called by $valid_apikey: $args[endpoint]");
+                api_sms(NOTIFY_NUMBER, "API Called by $valid_apikey: $params[endpoint]");
             }
             if (empty($valid_apikey)) {
-                api_sms(NOTIFY_NUMBER, "API Called by ".userIP().": $args[endpoint]");
+                api_sms(NOTIFY_NUMBER, "API Called by ".userIP().": $params[endpoint]");
             }
         }
 
