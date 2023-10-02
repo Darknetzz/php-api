@@ -78,6 +78,7 @@ Take a look at `api_aliases.php`, it should be quite self explanatory.
 This file is the fundament for this API. You should not have to edit this file to customize the API sufficiently.
 But if you must, here are the functions and their purpose:
 | FUNCTION                                 | PURPOSE                                     | PARAMETERS                                                    |
+| ---------------------------------------- | ------------------------------------------- | ------------------------------------------------------------- |
 | err                                      | This function will return an error          | string $text<br>int $statusCode = 500<br>bool $fatal = true   |
 | var_assert                               | Will assert variable (with optional value)  | mixed &$var<br>mixed $assertVal = false<br>bool $lazy = false |
 | userIP                                   | Should return the user's IP.                |                                                               |
