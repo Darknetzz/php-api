@@ -53,7 +53,7 @@ All you need to do now is configure it to your likings, in order to do this, you
 ---
 
 ### ⚙️ API Settings
-[#api_settings.php]
+[`api_settings.php`](#api_settings.php)
 
 This is where most of the actual configuration is done.
 In this file you will see a lot of options:
