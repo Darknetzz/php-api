@@ -20,7 +20,15 @@ function api_example_endpoint(string $someInput) : array {
     return ["input" => $someInput, "output" => "You had the following input: $someInput"];
 }
 
+# Another example with optional $append parameter.
+function api_echo(string $input, string $append = "Optional parameter") {
+    return ["This can be anything." => "You typed $input. But the second parameter is $append."];
+}
 
-
+# This endpoint will return the user's IP address.
+function api_ip() {
+    $ip = (!empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
+    return ["ip" => $ip];
+}
 
 ?>

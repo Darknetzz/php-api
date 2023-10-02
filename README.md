@@ -62,7 +62,9 @@ addAPIKey(
 
 ### API Endpoints
 To create an endpoint that you can talk to, open up the file `api_endpoints.php`.
+Here are some example endpoints you can configure.
 
+#### Get user IP
 Here is an example of an endpoint that returns the user's IP address.
 ````php
 function api_ip() {
@@ -70,6 +72,55 @@ function api_ip() {
     return ["ip" => $ip];
 }
 ````
+
+#### Endpoint with parameters
+The first parameter `$input` is required in this endpoint, but if the parameter has a default value, like `$append` in this example,
+it will be optional.
+````php
+function api_echo(string $input, string $append = "Optional parameter") {
+    return ["This can be anything." => "You typed $input. But the second parameter is $append."];
+}
+````
+
+##### Example requests with responses:
+    **/api/?endpoint=echo:**
+
+    ````json
+    {"httpCode":500,"status":"ERROR","data":"Alright now you are confusing me... I need 1 parameters for this function to work, but for some reason you gave me only 0."}
+    ````
+
+    **/api/?endpoint=echo&input=test**
+
+    ````json
+    {"httpCode":200,"status":"OK","data":{"response":{"This can be anything.":"You typed test. But the second parameter is Optional parameter."}}}
+    ````
+
+    **/api/?endpoint=echo&input=test&append=help**
+
+    ````json
+    {"httpCode":200,"status":"OK","data":{"response":{"This can be anything.":"You typed test. But the second parameter is help."}}}
+    ````
+
+#### Generating a string
+This endpoint will return a randomly generated string of `$len` length.
+````php
+function api_genstring(int $len = 32) : array {
+    $chars = array_merge(range('a', 'z'),range('A', 'Z'),range('0', '9'));
+    $string = "";
+    for ($i = 0; $i < $len; $i++) {
+        $rand = mt_rand(0, count($chars)-1);
+        $string .= $chars[$rand];
+    }
+    return ["string" => $string];
+}
+````
+
+##### Example requests with responses:
+    **/api/?endpoint=genstring**
+
+    ````json
+    {"httpCode":200,"status":"OK","data":{"response":{"string":"3Pyir18QabZz5udOX8tkbQQwxY07nB5K"}}}
+    ````
 
 ### API Endpoint Aliases
 Take a look at `api_aliases.php`, it should be quite self explanatory.
