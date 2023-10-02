@@ -3,20 +3,16 @@ A simple but customizable API written in PHP. You can configure this API to do a
 
 - [php\_api](#php_api)
   - [☑️ Prerequisites](#️-prerequisites)
-  - [Installing](#installing)
+  - [💻 Installing](#-installing)
   - [⚙️ Configuring](#️-configuring)
     - [📄 File summary](#-file-summary)
-    - [⚙️ API Settings](#️-api-settings)
+    - [🪛 API Settings](#-api-settings)
     - [🔑 API Keys](#-api-keys)
       - [API Keys -\> Available option parameters](#api-keys---available-option-parameters)
-    - [API Endpoints](#api-endpoints)
-      - [Get user IP](#get-user-ip)
-      - [Endpoint with parameters](#endpoint-with-parameters)
-        - [Example requests with responses:](#example-requests-with-responses)
-      - [Generating a string](#generating-a-string)
-        - [Example requests with responses:](#example-requests-with-responses-1)
+    - [💬 API Endpoints](#-api-endpoints)
     - [🟰 API Endpoint Aliases](#-api-endpoint-aliases)
     - [🧱 API Base](#-api-base)
+  - [| `fh_close`   | Properly close file handler (used for log\_write and lastcalled)                                           |  mixed `&$fh`                                                                       |](#-fh_close----properly-close-file-handler-used-for-log_write-and-lastcalled---------------------------------------------mixed-fh-----------------------------------------------------------------------)
   - [🧑‍💻 Using the API](#-using-the-api)
     - [cURL (bash)](#curl-bash)
     - [PHP:](#php)
@@ -29,7 +25,7 @@ A simple but customizable API written in PHP. You can configure this API to do a
 - A good understanding of the PHP language.
 - Basic understanding of API / HTTP request handling.
 
-## Installing
+## 💻 Installing
 You can start using this on your webserver by simply cloning this repository to your webroot folder:
 ```bash
 $ cd /var/www/html
@@ -52,15 +48,15 @@ All you need to do now is configure it to your likings, in order to do this, you
 
 ---
 
-### ⚙️ API Settings
+### 🪛 API Settings
 [`api_settings.php`](#api-settings)
 
 This is where most of the actual configuration is done.
 In this file you will see a lot of options:
 | CONSTANT            | DESCRIPTION                                                                                         | DEFAULT            |
 | :------------------ | :-------------------------------------------------------------------------------------------------- | :----------------- |
-| ENABLE_CUSTOM_INDEX | Whether or not to enable a custom index.php if no endpoint or parameters are given.                 | `false`            |
-| CUSTOM_INDEX        | If ENABLE_CUSTOM_INDEX is true, the user will be redirected to this page. Can be URL or local file. | `custom_index.php` |
+| `ENABLE_CUSTOM_INDEX` | Whether or not to enable a custom index.php if no endpoint or parameters are given.                 | `false`            |
+| `CUSTOM_INDEX`        | If ENABLE_CUSTOM_INDEX is true, the user will be redirected to this page. Can be URL or local file. | `custom_index.php` |
 
 ---
 
@@ -87,78 +83,107 @@ addAPIKey(
 #### API Keys -> Available option parameters
 | NAME                | DEFAULT VALUE | DESCRIPTION                                                                                             |
 | :------------------ | :------------ | :------------------------------------------------------------------------------------------------------ |
-| allowedEndpoints    | ["*"]         | Endpoints this key has access to. If there is a * in the array the key will be unrestricted.            |
-| disallowedEndpoints | []            | Endpoints this key specifically doesn't have access to, will override allowedEndpoints                  |
-| noTimeOut           | false         | Specify if this key can bypass the timeout                                                              |
-| timeout             | COOLDOWN_TIME | Time in seconds this key has to wait between API calls (COOLDOWN_TIME is specified in api_settings.php) |
-| notify              | true          | Whether or not to notify the owner of this API when an endpoint is used.                                |
-| log_write           | true          | Whether or not to write requests with this API key to a log file of your choosing.                      |
+| `allowedEndpoints`    | `["*"]`         | Endpoints this key has access to. If there is a * in the array the key will be unrestricted.            |
+| `disallowedEndpoints` | `[]`            | Endpoints this key specifically doesn't have access to, will override allowedEndpoints                  |
+| `noTimeOut`           | `false`         | Specify if this key can bypass the timeout                                                              |
+| `timeout`             | `COOLDOWN_TIME` | Time in seconds this key has to wait between API calls (COOLDOWN_TIME is specified in api_settings.php) |
+| `notify`              | `true`          | Whether or not to notify the owner of this API when an endpoint is used.                                |
+| `log_write`           | `true`          | Whether or not to write requests with this API key to a log file of your choosing.                      |
 
 ---
 
-### API Endpoints
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+<!--                              API ENDPOINTS                              -->
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+### 💬 API Endpoints
 `api_endpoints.php`
 
 To create an endpoint that you can talk to, open up the file `api_endpoints.php`.
 Here are some example endpoints you can configure.
 
-#### Get user IP
-Here is an example of an endpoint that returns the user's IP address.
-````php
-function api_ip() {
-    $ip = (!empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
-    return ["ip" => $ip];
-}
-````
+---
 
-#### Endpoint with parameters
-The first parameter `$input` is required in this endpoint, but if the parameter has a default value, like `$append` in this example,
-it will be optional.
-````php
-function api_echo(string $input, string $append = "Optional parameter") {
-    return ["This can be anything." => "You typed $input. But the second parameter is $append."];
-}
-````
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+<!--                                 API_IP                                  -->
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+- ##### ➡️ api_ip
+    Here is an example of an endpoint that returns the user's IP address.
 
-##### Example requests with responses:
-    **/api/?endpoint=echo:**
-
-    ````json
-    {"httpCode":500,"status":"ERROR","data":"Alright now you are confusing me... I need 1 parameters for this function to work, but for some reason you gave me only 0."}
-    ````
-
-    **/api/?endpoint=echo&input=test**
-
-    ````json
-    {"httpCode":200,"status":"OK","data":{"response":{"This can be anything.":"You typed test. But the second parameter is Optional parameter."}}}
-    ````
-
-    **/api/?endpoint=echo&input=test&append=help**
-
-    ````json
-    {"httpCode":200,"status":"OK","data":{"response":{"This can be anything.":"You typed test. But the second parameter is help."}}}
-    ````
-
-#### Generating a string
-This endpoint will return a randomly generated string of `$len` length.
-````php
-function api_genstring(int $len = 32) : array {
-    $chars = array_merge(range('a', 'z'),range('A', 'Z'),range('0', '9'));
-    $string = "";
-    for ($i = 0; $i < $len; $i++) {
-        $rand = mt_rand(0, count($chars)-1);
-        $string .= $chars[$rand];
+    ````php
+    function api_ip() {
+        $ip = (!empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
+        return ["ip" => $ip];
     }
-    return ["string" => $string];
-}
-````
+    ````
 
-##### Example requests with responses:
-    **/api/?endpoint=genstring**
+---
+
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+<!--                                API_ECHO                                 -->
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+- ##### ➡️ api_echo
+    The first parameter `$input` is required in this endpoint, but if the parameter has a default value, like `$append` in this example,
+    it will be optional.
+
+    ````php
+    function api_echo(string $input, string $append = "Optional parameter") {
+        return ["This can be anything." => "You typed $input. But the second parameter is $append."];
+    }
+    ````
+
+    - With no parameters provided:
+
+        `/api/?endpoint=echo:`
+        ````json
+        {"httpCode":500,"status":"ERROR","data":"Alright now you are confusing me... I need 1 parameters for this function to work, but for some reason you gave me only 0."}
+        ````
+
+    - With only required parameter provided:
+
+        `/api/?endpoint=echo&input=test`
+        ````json
+        {"httpCode":200,"status":"OK","data":{"response":{"This can be anything.":"You typed test. But the second parameter is Optional parameter."}}}
+        ````
+
+    - With required and optional parameter provided:
+
+        `/api/?endpoint=echo&input=test&append=help`
+        ````json
+        {"httpCode":200,"status":"OK","data":{"response":{"This can be anything.":"You typed test. But the second parameter is help."}}}
+        ````
+
+---
+
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+<!--                              API_GENSTRING                              -->
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+- #### ➡️ `api_genstring`
+    This endpoint will return a randomly generated string of `$len` length.
+
+    ````php
+    function api_genstring(int $len = 32) : array {
+        $chars = array_merge(range('a', 'z'),range('A', 'Z'),range('0', '9'));
+        $string = "";
+        for ($i = 0; $i < $len; $i++) {
+            $rand = mt_rand(0, count($chars)-1);
+            $string .= $chars[$rand];
+        }
+        return ["string" => $string];
+    }
+    ````
+
+    ````bash
+    curl -X 'GET' \
+    'https://<YOUR-SERVER>/php_api/?endpoint=genstring' \
+    -H 'accept: application/json' \
+    -H 'apikey: nrTv7xL6qyoOhWH7VBoh0Fs9JwChcoBNLhj1Us7l7zQKENBT0N8cZwDwB48YPdRL'
+    ````
 
     ````json
     {"httpCode":200,"status":"OK","data":{"response":{"string":"3Pyir18QabZz5udOX8tkbQQwxY07nB5K"}}}
     ````
+
+---
 
 ### 🟰 API Endpoint Aliases
 `api_aliases.php`
@@ -176,17 +201,20 @@ $aliases = [
 
 These aliases will work for both "internal"/"base" functions and endpoints.
 
+---
 
 ### 🧱 API Base
 `api_base.php`
 
 This file is the fundament for this API. You should not have to edit this file to customize the API sufficiently.
 But if you must, here are the functions and their purpose:
-| FUNCTION                                 | PURPOSE                                     | PARAMETERS                                                    |
-| ---------------------------------------- | ------------------------------------------- | ------------------------------------------------------------- |
-| err                                      | This function will return an error          | string $text<br>int $statusCode = 500<br>bool $fatal = true   |
-| var_assert                               | Will assert variable (with optional value)  | mixed &$var<br>mixed $assertVal = false<br>bool $lazy = false |
-| userIP                                   | Should return the user's IP.                |                                                               |
+| FUNCTION     | PURPOSE                                    | PARAMETERS                                                              |
+| ------------ | ------------------------------------------ | ----------------------------------------------------------------------- |
+| `err`        | This function will return an error         | string `$text`<br>int `$statusCode` = `500`<br>bool `$fatal` = `true`   |
+| `var_assert` | Will assert variable (with optional value) | mixed `&$var`<br>mixed `$assertVal` = `false`<br>bool `$lazy` = `false` |
+| `userIP`     | Should return the user's IP.               |                                                                         |
+| `fh_close`   | Properly close file handler (used for log_write and lastcalled)                                           |  mixed `&$fh`                                                                       |
+---
 
 ## 🧑‍💻 Using the API
 To query the API, you can use tools like cURL.
@@ -213,6 +241,8 @@ function queryAPI(string $endpoint, array $params = []) {
 $generateString = queryAPI('genstring');
 echo $generateString;
 ````
+
+---
 
 ## 🙋‍♂️ What's next?
 I work on this project from time to time with no definitive goal in mind, except for improving what already is. For me this is strictly recreational, although I would happily accept contributions on this project.
