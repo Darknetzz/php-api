@@ -90,7 +90,7 @@ In this file you will see a lot of options:
 
 <!-- ────────────────────────────── API Keys ─────────────────────────────── -->
 ### 🔑 API Keys
-`api_keys.php`
+[`api_keys.php`](#api-keys)
 
 > :warning: **Warning**: Please do not reuse API keys found anywhere! Generate your own keys at [roste.org](https://roste.org/rand/#rsgen).
 
@@ -125,7 +125,7 @@ addAPIKey(
 <!--                              API ENDPOINTS                              -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 ### 💬 API Endpoints
-`api_endpoints.php`
+[`api_endpoints.php`](#api-endpoints)
 
 To create an endpoint that you can talk to, open up the file `api_endpoints.php`.
 Here are some example endpoints you can configure.
@@ -214,7 +214,7 @@ Here are some example endpoints you can configure.
 <!--                          API Endpoint Aliases                           -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 ### 🟰 API Endpoint Aliases
-[`api_aliases.php`](#api_aliases.php)
+[`api_aliases.php`](#api_aliases)
 
 Here you can put your aliases, if you have any.
 
@@ -235,7 +235,7 @@ These aliases will work for both "internal"/"base" functions and endpoints.
 <!--                                API Base                                 -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 ### 🧱 API Base
-[`api_base.php`](#api_base.php)
+[`api_base.php`](#api_base)
 
 This file is the fundament for this API. You should not have to edit this file to customize the API sufficiently.
 But if you must, here are the functions and their purpose:
