@@ -1,10 +1,14 @@
 # ⭐ php_api
 A simple but customizable API written in PHP. You can configure this API to do anything you can do with PHP.
 
-<hr>
+## ⚠️ Disclaimer
+It is important for me to emphasize that this project is created purely for fun, and that there are **a lot** of better alternatives out there.
+Should you decide to use this API in a production environment or otherwise, you are doing so at your own risk.
+I will not take responsibility or be held liable for any consequences of doing so.
 
 ## 📖 Table of contents
 - [⭐ php\_api](#-php_api)
+  - [⚠️ Disclaimer](#️-disclaimer)
   - [📖 Table of contents](#-table-of-contents)
   - [☑️ Prerequisites](#️-prerequisites)
   - [💻 Installing](#-installing)
