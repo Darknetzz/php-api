@@ -1,10 +1,12 @@
-# php_api
+# ⭐ php_api
 A simple but customizable API written in PHP. You can configure this API to do anything you can do with PHP.
 
-- [php\_api](#php_api)
+## 📖 Table of contents
+- [⭐ php\_api](#-php_api)
+  - [📖 Table of contents](#-table-of-contents)
   - [☑️ Prerequisites](#️-prerequisites)
   - [💻 Installing](#-installing)
-  - [⚙️ Configuring](#️-configuring)
+  - [⚙️ Configuration](#️-configuration)
     - [📄 File summary](#-file-summary)
     - [🪛 API Settings](#-api-settings)
     - [🔑 API Keys](#-api-keys)
@@ -13,10 +15,6 @@ A simple but customizable API written in PHP. You can configure this API to do a
     - [🧱 API Base](#-api-base)
   - [🧑‍💻 Using the API](#-using-the-api)
   - [🙋‍♂️ What's next?](#️-whats-next)
-
-
-<br><br>
-<br><br>
 
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 <!--                              Prerequisites                              -->
@@ -41,7 +39,7 @@ You have now installed the API to https://<YOUR_SERVER>/php_api
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 <!--                               Configuring                               -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
-## ⚙️ Configuring
+## ⚙️ Configuration
 All you need to do now is configure it to your likings, in order to do this, you need to take a look at the included files.
 
 <!-- ──────────────────────────── File summary ───────────────────────────── -->
