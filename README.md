@@ -1,6 +1,8 @@
 # ⭐ php_api
 A simple but customizable API written in PHP. You can configure this API to do anything you can do with PHP.
 
+<hr>
+
 ## 📖 Table of contents
 - [⭐ php\_api](#-php_api)
   - [📖 Table of contents](#-table-of-contents)
@@ -8,17 +10,19 @@ A simple but customizable API written in PHP. You can configure this API to do a
   - [💻 Installing](#-installing)
   - [⚙️ Configuration](#️-configuration)
     - [📄 File summary](#-file-summary)
-    - [🪛 API Settings](#-api-settings)
-    - [🔑 API Keys](#-api-keys)
-    - [💬 API Endpoints](#-api-endpoints)
-    - [🟰 API Endpoint Aliases](#-api-endpoint-aliases)
-    - [🧱 API Base](#-api-base)
+    - [🪛 Settings](#-settings)
+    - [🔑 Keys](#-keys)
+    - [💬 Endpoints](#-endpoints)
+    - [🟰 Endpoint Aliases](#-endpoint-aliases)
+    - [🧱 Base](#-base)
   - [🧑‍💻 Using the API](#-using-the-api)
   - [🙋‍♂️ What's next?](#️-whats-next)
 
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 <!--                              Prerequisites                              -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
+<hr>
+
 ## ☑️ Prerequisites
 - A webserver running PHP. (Recommended version is 8.1 or above, versions from 7.3 and above should work but is untested).
 - A good understanding of the PHP language.
@@ -27,6 +31,8 @@ A simple but customizable API written in PHP. You can configure this API to do a
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 <!--                               Installing                                -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
+<hr>
+
 ## 💻 Installing
 You can start using this on your webserver by simply cloning this repository to your webroot folder:
 ```bash
@@ -39,6 +45,8 @@ You have now installed the API to https://<YOUR_SERVER>/php_api
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 <!--                               Configuring                               -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
+<hr>
+
 ## ⚙️ Configuration
 All you need to do now is configure it to your likings, in order to do this, you need to take a look at the included files.
 
@@ -52,10 +60,10 @@ All you need to do now is configure it to your likings, in order to do this, you
 | [api_aliases.php](#api-endpoint-aliases) | This is where you specify aliases for your endpoints. That means an endpoint can have several names.         |
 | [api_base.php](#api-base)                | The most fundamental functions. Don't change this file unless you know what you are doing.                   |
 
----
+
 
 <!-- ──────────────────────────── API Settings ───────────────────────────── -->
-### 🪛 API Settings
+### 🪛 Settings
 [`api_settings.php`](#api-settings)
 
 This is where most of the actual configuration is done.
@@ -74,8 +82,8 @@ In this file you will see a lot of options:
 | `LOG_ENABLE`             | Whether or not to enable logging.                                                                     | `true`                                                                                                |
 | `LOG_FILE`               | Log file to write logs to if `LOG_ENABLE` is true.                                                    | `"api.log"`                                                                                           |
 | `LOG_LEVEL`              | Default log level                                                                                     | `"info"`                                                                                              |
-| `LOG_LEVELS`             | Different levels of logging. Should not be changed.                                                   | `'WARNING' => 10`<br>`'INFO' => 20`<br>`'VERBOSE' => 30`                                              |
-| `GLOBAL_PARAMS`          | An array of global parameters which can be used anywhere (regardless of endpoint)                     | `"apikey"`<br>`"endpoint"`<br>`"filter"`<br>`"filterdata"`<br>`"clean"`<br>`"compact"`<br>`"verbose"` |
+| `LOG_LEVELS`             | Different levels of logging. Should not be changed.                                                   | `'WARNING' => 10``'INFO' => 20``'VERBOSE' => 30`                                              |
+| `GLOBAL_PARAMS`          | An array of global parameters which can be used anywhere (regardless of endpoint)                     | `"apikey"``"endpoint"``"filter"``"filterdata"``"clean"``"compact"``"verbose"` |
 | `VALID_FILTERS`          |                                                                                                       |                                                                                                       |
 | `OPEN_ENDPOINTS`         |                                                                                                       |                                                                                                       |
 | `NOW`                    |                                                                                                       | `round(microtime(true))`                                                                              |
@@ -84,10 +92,10 @@ In this file you will see a lot of options:
 | `APIKEY_DEFAULT_OPTIONS` |                                                                                                       |                                                                                                       |
 | `FUNNY_RESPONSES_ENABLE` |                                                                                                       | `true`                                                                                                |
 
----
+
 
 <!-- ────────────────────────────── API Keys ─────────────────────────────── -->
-### 🔑 API Keys
+### 🔑 Keys
 [`api_keys.php`](#api-keys)
 
 > :warning: **Warning**: Please do not reuse API keys found anywhere! Generate your own keys at [roste.org](https://roste.org/rand/#rsgen).
@@ -117,18 +125,18 @@ addAPIKey(
 | `notify`              | `true`          | Whether or not to notify the owner of this API when an endpoint is used.                                |
 | `log_write`           | `true`          | Whether or not to write requests with this API key to a log file of your choosing.                      |
 
----
+
 
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 <!--                              API ENDPOINTS                              -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
-### 💬 API Endpoints
+### 💬 Endpoints
 [`api_endpoints.php`](#api-endpoints)
 
 To create an endpoint that you can talk to, open up the file `api_endpoints.php`.
 Here are some example endpoints you can configure.
 
----
+
 
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 <!--                                 API_IP                                  -->
@@ -206,12 +214,12 @@ Here are some example endpoints you can configure.
     {"httpCode":200,"status":"OK","data":{"response":{"string":"3Pyir18QabZz5udOX8tkbQQwxY07nB5K"}}}
     ````
 
----
+
 
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 <!--                          API Endpoint Aliases                           -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
-### 🟰 API Endpoint Aliases
+### 🟰 Endpoint Aliases
 [`api_aliases.php`](#api_aliases)
 
 Here you can put your aliases, if you have any.
@@ -227,32 +235,34 @@ $aliases = [
 
 These aliases will work for both "internal"/"base" functions and endpoints.
 
----
+
 
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 <!--                                API Base                                 -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
-### 🧱 API Base
+### 🧱 Base
 [`api_base.php`](#api_base)
 
 This file is the fundament for this API. You should not have to edit this file to customize the API sufficiently.
 But if you must, here are the functions and their purpose:
 | FUNCTION     | PURPOSE                                                         | PARAMETERS                                                              |
 | :----------- | :-------------------------------------------------------------- | :---------------------------------------------------------------------- |
-| `err`        | This function will return an error                              | string `$text`<br>int `$statusCode` = `500`<br>bool `$fatal` = `true`   |
-| `var_assert` | Will assert variable (with optional value)                      | mixed `&$var`<br>mixed `$assertVal` = `false`<br>bool `$lazy` = `false` |
+| `err`        | This function will return an error                              | string `$text`int `$statusCode` = `500`bool `$fatal` = `true`   |
+| `var_assert` | Will assert variable (with optional value)                      | mixed `&$var`mixed `$assertVal` = `false`bool `$lazy` = `false` |
 | `userIP`     | Should return the user's IP.                                    |                                                                         |
 | `fh_close`   | Properly close file handler (used for log_write and lastcalled) | mixed `&$fh`                                                            |
 
----
 
 
-<hr>
-<br><br><br>
+
+
+
 
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 <!--                              Using the API                              -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
+<hr>
+
 ## 🧑‍💻 Using the API
 
 **cURL**
@@ -290,10 +300,12 @@ But if you must, here are the functions and their purpose:
     echo $generateString;
     ````
 
----
+
+
+
+
 
 <hr>
-<br><br><br>
 
 ## 🙋‍♂️ What's next?
 I work on this project from time to time with no definitive goal in mind, except for improving what already is. For me this is strictly recreational, although I would happily accept contributions on this project.
