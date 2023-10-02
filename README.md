@@ -23,15 +23,15 @@ All you need to do now is configure it to your likings, in order to do this, you
 ### File summary
 | File | Description |
 | --- | --- |
-| [api_endpoints.php](#endpoints) | This is where you specify your endpoints. |
-| [api_settings.php](#settings)  | You can change some default settings here.|
-| [api_keys.php](#keys)      | Put your securely generated API keys here. Pro tip: [Use a generator!](https://server.roste.org/rand/#rsgen) |
-| [api_aliases.php](#aliases)   | This is where you specify aliases for your endpoints. That means an endpoint can have several names. |
-| [api_base.php](#base)      | The most fundamental functions. Don't change this file unless you know what you are doing. |
+| [api_endpoints.php](#api-endpoints) | This is where you specify your endpoints. |
+| [api_settings.php](#api-settings)  | You can change some default settings here.|
+| [api_keys.php](#api-keys)      | Put your securely generated API keys here. Pro tip: [Use a generator!](https://server.roste.org/rand/#rsgen) |
+| [api_aliases.php](#api-endpoint-aliases)   | This is where you specify aliases for your endpoints. That means an endpoint can have several names. |
+| [api_base.php](#api-base)      | The most fundamental functions. Don't change this file unless you know what you are doing. |
 
-### API Settings [settings]
+### API Settings
 
-### API Keys [keys]
+### API Keys
 
 > :warning: **Warning**: Please do not reuse API keys found anywhere! Generate your own keys at [roste.org](https://roste.org/rand/#rsgen).
 
@@ -60,7 +60,7 @@ addAPIKey(
 | notify              | true          | Whether or not to notify the owner of this API when an endpoint is used.                                |
 | log_write           | true          | Whether or not to write requests with this API key to a log file of your choosing.                      |
 
-### API Endpoints [endpoints]
+### API Endpoints
 To create an endpoint that you can talk to, open up the file `api_endpoints.php`.
 
 Here is an example of an endpoint that returns the user's IP address.
@@ -71,10 +71,10 @@ function api_ip() {
 }
 ````
 
-### API Endpoint Aliases [aliases]
+### API Endpoint Aliases
 Take a look at `api_aliases.php`, it should be quite self explanatory.
 
-### API Base [base]
+### API Base
 This file is the fundament for this API. You should not have to edit this file to customize the API sufficiently.
 But if you must, here are the functions and their purpose:
 | FUNCTION                                 | PURPOSE                                     | PARAMETERS                                                    |
