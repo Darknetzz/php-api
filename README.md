@@ -42,18 +42,18 @@ You have now installed the API to https://<YOUR_SERVER>/php_api
 All you need to do now is configure it to your likings, in order to do this, you need to take a look at the included files.
 
 ### 📄 File summary
-| File | Description |
-| --- | --- |
-| [api_endpoints.php](#api-endpoints) | This is where you specify your endpoints. |
-| [api_settings.php](#api_settings.php)  | You can change some default settings here.|
-| [api_keys.php](#api-keys)      | Put your securely generated API keys here. Pro tip: [Use a generator!](https://server.roste.org/rand/#rsgen) |
-| [api_aliases.php](#api-endpoint-aliases)   | This is where you specify aliases for your endpoints. That means an endpoint can have several names. |
-| [api_base.php](#api-base)      | The most fundamental functions. Don't change this file unless you know what you are doing. |
+| File                                     | Description                                                                                                  |
+| :--------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
+| [api_settings.php](#api-settings)        | You can change some default settings here.                                                                   |
+| [api_keys.php](#api-keys)                | Put your securely generated API keys here. Pro tip: [Use a generator!](https://server.roste.org/rand/#rsgen) |
+| [api_endpoints.php](#api-endpoints)      | This is where you specify your endpoints.                                                                    |
+| [api_aliases.php](#api-endpoint-aliases) | This is where you specify aliases for your endpoints. That means an endpoint can have several names.         |
+| [api_base.php](#api-base)                | The most fundamental functions. Don't change this file unless you know what you are doing.                   |
 
 ---
 
 ### ⚙️ API Settings
-[`api_settings.php`](#api_settings.php)
+[`api_settings.php`](#api-settings)
 
 This is where most of the actual configuration is done.
 In this file you will see a lot of options:
