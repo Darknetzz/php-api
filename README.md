@@ -1,5 +1,5 @@
 # php_api
-A simple but customizable API written in PHP.
+A simple but customizable API written in PHP. You can configure this API to do anything you can do with PHP.
 
 ## Prerequisites
 - A webserver running PHP. (Recommended version is 8.1 or above, versions from 7.3 and above should work but is untested).
@@ -80,3 +80,6 @@ To query the API, you can use tools like cURL.
 | api_keys.php      | Put your securely generated API keys here. Pro tip: [Use a generator!](https://server.roste.org/rand/#rsgen) |
 | api_aliases.php   | This is where you specify aliases for your endpoints. That means an endpoint can have several names. |
 | api_base.php      | The most fundamental functions. Don't change this file unless you know what you are doing. |
+
+## What's next?
+I work on this project from time to time with no definitive goal in mind, except for improving what already is. For me this is strictly recreational, although I would happily accept contributions on this project.
