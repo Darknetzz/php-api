@@ -1,6 +1,11 @@
 # php_api
 A simple but customizable API written in PHP.
 
+## Prerequisites
+- A webserver running PHP. (Recommended version is 8.1 or above, versions from 7.3 and above should work but is untested).
+- A good understanding of the PHP language.
+- Basic understanding of API / HTTP request handling.
+
 ## Installing
 
 You can start using this on your webserver by simply cloning this repository to your webroot folder:
