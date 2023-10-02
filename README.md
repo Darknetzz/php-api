@@ -20,9 +20,18 @@ You have now installed the API to https://<YOUR_SERVER>/php_api
 
 All you need to do now is configure it to your likings, in order to do this, you need to take a look at the included files.
 
-### api_settings.php
+### File summary
+| File | Description |
+| --- | --- |
+| [api_endpoints.php](#endpoints) | This is where you specify your endpoints. |
+| [api_settings.php](#settings)  | You can change some default settings here.|
+| [api_keys.php](#keys)      | Put your securely generated API keys here. Pro tip: [Use a generator!](https://server.roste.org/rand/#rsgen) |
+| [api_aliases.php](#aliases)   | This is where you specify aliases for your endpoints. That means an endpoint can have several names. |
+| [api_base.php](#base)      | The most fundamental functions. Don't change this file unless you know what you are doing. |
 
-### API Keys
+### API Settings [settings]
+
+### API Keys [keys]
 
 > :warning: **Warning**: Please do not reuse API keys found anywhere! Generate your own keys at [roste.org](https://roste.org/rand/#rsgen).
 
@@ -51,7 +60,7 @@ addAPIKey(
 | notify              | true          | Whether or not to notify the owner of this API when an endpoint is used.                                |
 | log_write           | true          | Whether or not to write requests with this API key to a log file of your choosing.                      |
 
-### Creating your first endpoint
+### API Endpoints [endpoints]
 To create an endpoint that you can talk to, open up the file `api_endpoints.php`.
 
 Here is an example of an endpoint that returns the user's IP address.
@@ -62,8 +71,16 @@ function api_ip() {
 }
 ````
 
-### Aliases
+### API Endpoint Aliases [aliases]
 Take a look at `api_aliases.php`, it should be quite self explanatory.
+
+### API Base [base]
+This file is the fundament for this API. You should not have to edit this file to customize the API sufficiently.
+But if you must, here are the functions and their purpose:
+| FUNCTION                                 | PURPOSE                                     | PARAMETERS                                                    |
+| err                                      | This function will return an error          | string $text<br>int $statusCode = 500<br>bool $fatal = true   |
+| var_assert                               | Will assert variable (with optional value)  | mixed &$var<br>mixed $assertVal = false<br>bool $lazy = false |
+| userIP                                   | Should return the user's IP.                |                                                               |
 
 ## Using the API
 To query the API, you can use tools like cURL.
@@ -71,15 +88,6 @@ To query the API, you can use tools like cURL.
 ````bash
 `$ curl -X GET -H "Content-Type: application/json" https://<YOUR_SERVER>/php_api/?apikey=nrTv7xL6qyoOhWH7VBoh0Fs9JwChcoBNLhj1Us7l7zQKENBT0N8cZwDwB48YPdRL&endpoint=ip
 ````
-
-## File summary
-| File | Description |
-| --- | --- |
-| api_endpoints.php | This is where you specify your endpoints. |
-| api_settings.php  | You can change some default settings here.|
-| api_keys.php      | Put your securely generated API keys here. Pro tip: [Use a generator!](https://server.roste.org/rand/#rsgen) |
-| api_aliases.php   | This is where you specify aliases for your endpoints. That means an endpoint can have several names. |
-| api_base.php      | The most fundamental functions. Don't change this file unless you know what you are doing. |
 
 ## What's next?
 I work on this project from time to time with no definitive goal in mind, except for improving what already is. For me this is strictly recreational, although I would happily accept contributions on this project.
