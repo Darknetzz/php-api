@@ -28,9 +28,9 @@ I will not take responsibility or be held liable for any consequences of doing s
 <hr>
 
 ## ☑️ Prerequisites
-- A webserver running PHP. (Recommended version is 8.1 or above, versions from 7.3 and above should work but is untested).
-- A good understanding of the PHP language.
-- Basic understanding of API / HTTP request handling.
+- [x] A webserver running PHP. (Recommended version is 8.1 or above, versions from 7.3 and above should work but is untested).
+- [x] A good understanding of the PHP language.
+- [x] Basic understanding of API / HTTP request handling.
 
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 <!--                               Installing                                -->
