@@ -312,4 +312,4 @@ But if you must, here are the functions and their purpose:
 <hr>
 
 ## 🙋‍♂️ What's next?
-I work on this project from time to time with no definitive goal in mind, except for improving what already is. For me this is strictly recreational, although I would happily accept contributions on this project.
+I work on this project from time to time with no definitive goal in mind, except for improving what already is. For me this is strictly recreational, although I would happily accept contributions or suggestions for new features or improvements on this project.
