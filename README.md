@@ -295,8 +295,8 @@ But if you must, here are the functions and their purpose:
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
             curl_setopt($ch, CURLOPT_URL, $uri);
-            curl_close($ch);
             $response = json_decode(curl_exec($ch), true);
+            curl_close($ch);
             return $response;
     }
 
