@@ -215,7 +215,12 @@ function funnyResponse(string $type, array $vars = []) : string {
         $$varVar = $varVal;
     }
 
-    $csParams = "Parameters for this endpoint: ".implode(', ',$requiredParams);
+    # Not sure if this ever happens? I think $requiredParams always will be a string
+    if (is_array($requiredParams)) {
+        $csParams = "Parameters for this endpoint: ".implode(', ',$requiredParams);
+    } else {
+        $csParams = "Parameters for this endpoint: $requiredParams";
+    }
 
     /* ────────────────────────────────────────────────────────────────────────── */
 
