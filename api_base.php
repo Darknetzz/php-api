@@ -518,6 +518,10 @@ function callFunction(string $func, array $params = []) {
 function secondsSinceLastCalled($function_name, $valid_apikey = null) {
     try {
 
+        if (!file_exists(LAST_CALLED_JSON)) {
+            touch(LAST_CALLED_JSON);
+        }
+
         $json_contents = file_get_contents(LAST_CALLED_JSON);
         $lf = json_decode($json_contents, true);
         
