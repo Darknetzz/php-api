@@ -40,7 +40,7 @@ if (!var_assert($_GET['endpoint'])) {
 $endpoint = "api_".$_GET['endpoint'];
 
 # Apart from that we don't wish to extinguish between request methods (for now), unless unspecified.
-if (!empty($_SERVER['REQUEST_METHOD'])) {
+if (empty($_SERVER['REQUEST_METHOD'])) {
     die(err("Invalid request method"));
 }
 $args = $_REQUEST;
