@@ -207,12 +207,15 @@ function funnyResponse(string $type, array $vars = []) : string {
     foreach ($validVars as $validVar) {
         $$validVar = "";
     }
+
     foreach ($vars as $varVar => $varVal) {
         if (!in_array($varVar, $validVars)) {
             return "You have specified an invalid variable: $varVar";
         }
         $$varVar = $varVal;
     }
+
+    $csParams = "Parameters for this endpoint: ".implode(', ',$requiredParams);
 
     /* ────────────────────────────────────────────────────────────────────────── */
 
@@ -229,8 +232,8 @@ function funnyResponse(string $type, array $vars = []) : string {
         "WRONG_PARAM_COUNT" => [
             "default" => "Wrong amount of parameters given. Endpoint '$func' has $allParamCount available parameters ($requiredParamCount required). you provided $paramsCleanCount.",
             "funny" => [
-                "Wait a minute, you specified $paramsCleanCount, but this endpoint requires $requiredParamCount of them...",
-                "Alright now you are confusing me... I need $requiredParamCount parameters for this function to work, but for some reason you gave me only $paramsCleanCount.",
+                "Wait a minute, you specified $paramsCleanCount, but this endpoint requires $requiredParamCount of them... $csParams",
+                "Alright now you are confusing me... I need $requiredParamCount parameters for this function to work, but for some reason you gave me only $paramsCleanCount. $csParams",
             ],
         ],
         "ENDPOINT_FALSY" => [
