@@ -14,7 +14,7 @@ I did this mostly because I needed to test stuff for myself without git pushing.
 */
 
 $includes = [
-    'api_settings',
+    'api_settings', # settings is already included in index.php
     'api_base',
     'api_endpoints',
     'api_keys',

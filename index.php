@@ -5,7 +5,15 @@
 /* ──────── Made with ❤️ by darknetzz @ https://github.com/darknetzz ──────── */
 /* ────────────────────────────────────────────────────────────────────────── */
 
-require_once('api_includes.php');
+
+# Require settings file -
+# this needs to be done here because we allow custom a index
+$settings = 'api_settings.php';
+if (file_exists('custom_'.$settings)) {
+    require_once('custom_'.$settings);
+} else {
+    require_once($settings);
+}
 
 if (!$_REQUEST && ENABLE_CUSTOM_INDEX_NOPARAMS === true && __FILE__ !== CUSTOM_INDEX_NOPARAMS) {
     header('Location: '.CUSTOM_INDEX_NOPARAMS);
@@ -16,6 +24,8 @@ if ($_REQUEST && ENABLE_CUSTOM_INDEX === true && __FILE__ !== CUSTOM_INDEX) {
     header('Location: '.CUSTOM_INDEX."?".http_build_query($_REQUEST));
     die(); # the header should redirect us, but make sure we stop running here.
 }
+
+require_once('api_includes.php');
 
 header('Content-type: application/json;'); 
 
