@@ -15,6 +15,7 @@
 /* ────────────────────────────────────────────────────────────────────────── */
 # Will redirect user to somewhere else than index.php if set to true
 # if there are no parameters given (endpoint, apikey etc.)
+define('ENABLE_CUSTOM_INDEX_NOPARAMS', false);
 define('ENABLE_CUSTOM_INDEX', false);
 
 # What page should the user be redirected to? Also supports full URLs
