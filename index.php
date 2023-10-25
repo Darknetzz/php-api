@@ -14,19 +14,17 @@ if (!$_REQUEST && ENABLE_CUSTOM_INDEX === true) {
 
 header('Content-type: application/json;'); 
 
-if ($_SERVER['REQUEST_METHOD'] == "POST") {
-    $args = $_POST;
-} elseif ($_SERVER['REQUEST_METHOD'] == "GET") {
-    $args = $_GET;
-} else {
-    die(err("Unsupported request type.", 500));
-}
-
-if (!var_assert($args['endpoint'])) {
+# The endpoint should always be provided in GET
+if (!var_assert($_GET['endpoint'])) {
     die(err("No endpoint provided.", 404));
 }
+$endpoint = "api_".$_GET['endpoint'];
 
-$endpoint = "api_".$args['endpoint'];
+# Apart from that we don't wish to extinguish between request methods (for now), unless unspecified.
+if (!empty($_SERVER['REQUEST_METHOD'])) {
+    die(err("Invalid request method"));
+}
+$args = $_REQUEST;
 
 $functionCall = callFunction($endpoint, $args);
 
