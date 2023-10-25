@@ -28,7 +28,5 @@ $args = $_REQUEST;
 
 $functionCall = callFunction($endpoint, $args);
 
-$output = $functionCall;
-
-echo $output;
+echo $functionCall;
 ?>

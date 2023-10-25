@@ -274,8 +274,8 @@ function funnyResponse(string $type, array $vars = []) : string {
 /* ────────────────────────────────────────────────────────────────────────── */
 function api_response(string $status, mixed $data) : string {
     
-    global $_GET;
-    $params = $_GET;
+    global $_REQUEST;
+    $params = $_REQUEST;
 
     log_write("api_response(): The API responded with a status of $status.");
 
