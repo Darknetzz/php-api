@@ -19,6 +19,7 @@ define('ENABLE_CUSTOM_INDEX', false);
 
 # What page should the user be redirected to? Also supports full URLs
 # Example: 'https://example.com/wiki/api'
+define('CUSTOM_INDEX_NOPARAMS', 'custom_index.php');
 define('CUSTOM_INDEX', 'custom_index.php');
 
 

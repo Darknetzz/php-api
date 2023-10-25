@@ -8,7 +8,7 @@
 require_once('api_includes.php');
 
 if (!$_REQUEST && ENABLE_CUSTOM_INDEX === true) {
-    header('Location: '.CUSTOM_INDEX);
+    header('Location: '.CUSTOM_INDEX_NOPARAMS);
     die(); # the header should redirect us, but make sure we stop running here.
 }
 
