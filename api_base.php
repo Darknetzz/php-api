@@ -195,6 +195,7 @@ function funnyResponse(string $type, array $vars = []) : string {
         "requiredParamCount",
         "specifiedParams",
         "allParamCount",
+        "allParamNames",
         "paramsCleanCount",
         "secondsSinceLastCalled",
         "noTimeOut",
@@ -216,10 +217,10 @@ function funnyResponse(string $type, array $vars = []) : string {
     }
 
     # Not sure if this ever happens? I think $requiredParams always will be a string
-    if (is_array($requiredParams)) {
-        $csParams = "Parameters for this endpoint: ".implode(', ',$requiredParams);
+    if (!empty($allParamNames)) {
+        $csParams = "Parameters for this endpoint: ".implode(', ',$allParamNames);
     } else {
-        $csParams = "Parameters for this endpoint: $requiredParams";
+        $csParams = "Parameters for this endpoint: none";
     }
 
     /* ────────────────────────────────────────────────────────────────────────── */
@@ -479,6 +480,7 @@ function callFunction(string $func, array $params = []) {
             return err(funnyResponse(
                 "WRONG_PARAM_COUNT", [
                     "endpoint"              => $func,
+                    "allParamNames"         => $allParamNames,
                     "allParamCount"         => $allParamCount,
                     "paramsCleanCount"      => $paramsCleanCount,
                     "requiredParamCount"    => $requiredParamCount,
