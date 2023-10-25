@@ -7,12 +7,12 @@
 
 require_once('api_includes.php');
 
-if (!$_REQUEST && ENABLE_CUSTOM_INDEX_NOPARAMS === true) {
+if (!$_REQUEST && ENABLE_CUSTOM_INDEX_NOPARAMS === true && __FILE__ !== CUSTOM_INDEX_NOPARAMS) {
     header('Location: '.CUSTOM_INDEX_NOPARAMS);
     die(); # the header should redirect us, but make sure we stop running here.
 }
 
-if ($_REQUEST && ENABLE_CUSTOM_INDEX === true) {
+if ($_REQUEST && ENABLE_CUSTOM_INDEX === true && __FILE__ !== CUSTOM_INDEX) {
     header('Location: '.CUSTOM_INDEX."?".http_build_query($_REQUEST));
     die(); # the header should redirect us, but make sure we stop running here.
 }
