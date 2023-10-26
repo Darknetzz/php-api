@@ -38,7 +38,9 @@ I will not take responsibility or be held liable for any consequences of doing s
 <hr>
 
 ## 💻 Installing
-You can start using this on your webserver by simply cloning this repository to your webroot folder:
+You can start using this on your webserver by simply downloading the [latest stable release](https://github.com/Darknetzz/php_api/releases/latest) and unzip it to your webserver.
+
+or if you want the latest unstable release, you can clone this repository to your webroot folder:
 ```bash
 $ cd /var/www/html
 $ git clone https://github.com/Darknetzz/php_api.git
