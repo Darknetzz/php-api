@@ -288,9 +288,9 @@ function api_response(string $status, mixed $data) : string {
 
     log_write("api_response(): The API responded with a status of $status.");
 
-    $pretty_print = 0;
+    $pretty_print = JSON_UNESCAPED_UNICODE;
     if (var_assert(($options['compact']), true)) {
-        $pretty_print = JSON_PRETTY_PRINT;
+        $pretty_print = JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT;
     }
 
     if (!array_key_exists($status, HTTP_STATUS_CODES)) {
