@@ -195,6 +195,7 @@ function funnyResponse(string $type, array $vars = []) : string {
         "requiredParamCount",
         "specifiedParams",
         "allParamCount",
+        "allParamNames",
         "paramsCleanCount",
         "secondsSinceLastCalled",
         "noTimeOut",
@@ -207,11 +208,19 @@ function funnyResponse(string $type, array $vars = []) : string {
     foreach ($validVars as $validVar) {
         $$validVar = "";
     }
+
     foreach ($vars as $varVar => $varVal) {
         if (!in_array($varVar, $validVars)) {
             return "You have specified an invalid variable: $varVar";
         }
         $$varVar = $varVal;
+    }
+
+    # Not sure if this ever happens? I think $requiredParams always will be a string
+    if (!empty($allParamNames)) {
+        $csParams = "Parameters for this endpoint: ".implode(', ',$allParamNames);
+    } else {
+        $csParams = "Parameters for this endpoint: none";
     }
 
     /* ────────────────────────────────────────────────────────────────────────── */
@@ -229,8 +238,8 @@ function funnyResponse(string $type, array $vars = []) : string {
         "WRONG_PARAM_COUNT" => [
             "default" => "Wrong amount of parameters given. Endpoint '$func' has $allParamCount available parameters ($requiredParamCount required). you provided $paramsCleanCount.",
             "funny" => [
-                "Wait a minute, you specified $paramsCleanCount, but this endpoint requires $requiredParamCount of them...",
-                "Alright now you are confusing me... I need $requiredParamCount parameters for this function to work, but for some reason you gave me only $paramsCleanCount.",
+                "Wait a minute, you specified $paramsCleanCount, but this endpoint requires $requiredParamCount of them... $csParams",
+                "Alright now you are confusing me... I need $requiredParamCount parameters for this function to work, but for some reason you gave me only $paramsCleanCount. $csParams",
             ],
         ],
         "ENDPOINT_FALSY" => [
@@ -274,14 +283,14 @@ function funnyResponse(string $type, array $vars = []) : string {
 /* ────────────────────────────────────────────────────────────────────────── */
 function api_response(string $status, mixed $data) : string {
     
-    global $_GET;
-    $params = $_GET;
+    global $_REQUEST;
+    $params = $_REQUEST;
 
     log_write("api_response(): The API responded with a status of $status.");
 
-    $pretty_print = 0;
+    $pretty_print = JSON_UNESCAPED_UNICODE;
     if (var_assert(($options['compact']), true)) {
-        $pretty_print = JSON_PRETTY_PRINT;
+        $pretty_print = JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT;
     }
 
     if (!array_key_exists($status, HTTP_STATUS_CODES)) {
@@ -471,6 +480,7 @@ function callFunction(string $func, array $params = []) {
             return err(funnyResponse(
                 "WRONG_PARAM_COUNT", [
                     "endpoint"              => $func,
+                    "allParamNames"         => $allParamNames,
                     "allParamCount"         => $allParamCount,
                     "paramsCleanCount"      => $paramsCleanCount,
                     "requiredParamCount"    => $requiredParamCount,
@@ -517,6 +527,10 @@ function callFunction(string $func, array $params = []) {
 /* ────────────────────────────────────────────────────────────────────────── */
 function secondsSinceLastCalled($function_name, $valid_apikey = null) {
     try {
+
+        if (!file_exists(LAST_CALLED_JSON)) {
+            touch(LAST_CALLED_JSON);
+        }
 
         $json_contents = file_get_contents(LAST_CALLED_JSON);
         $lf = json_decode($json_contents, true);
