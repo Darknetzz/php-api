@@ -15,8 +15,9 @@ if (file_exists('custom_'.$settings)) {
     require_once($settings);
 }
 
-if (!$_REQUEST 
-    && ENABLE_CUSTOM_INDEX_NOPARAMS === true 
+if (defined('ENABLE_CUSTOM_INDEX_NOPARAMS') &&
+    defined('CUSTOM_INDEX_NOPARAMS')
+    && empty($_REQUEST) 
     && basename(__FILE__) !== basename(CUSTOM_INDEX_NOPARAMS)) {
     header('Location: '.CUSTOM_INDEX_NOPARAMS);
     die(); # the header should redirect us, but make sure we stop running here.
