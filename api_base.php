@@ -464,7 +464,7 @@ function callFunction(string $func, array $params = []) {
             $secondsSinceLastCalled = secondsSinceLastCalled($func, $valid_apikey);
             
             if (!$secondsSinceLastCalled && $apikey_options['noTimeOut'] === false) {
-                die(err("Function secondsSinceLastCalled() failed. Please stop spamming this API."));
+                die(err("Function secondsSinceLastCalled() failed. Please stop spamming this API.", 403));
             }
 
             $verboseInfo = [
@@ -495,7 +495,7 @@ function callFunction(string $func, array $params = []) {
                     "secondsSinceLastCalled" => $secondsSinceLastCalled,
                     "secondsToWait" => (COOLDOWN_TIME - $secondsSinceLastCalled),
                     "noTimeOut" => $apikey_options["noTimeOut"],
-                ]));
+                ]), 403);
             // return err("The endpoint '$func' was called a mere ".$secondsSinceLastCalled." seconds ago! Please wait another ".(COOLDOWN_TIME - $secondsSinceLastCalled)." seconds.");
         }
 
