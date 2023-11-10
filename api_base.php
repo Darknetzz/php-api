@@ -438,13 +438,24 @@ function callFunction(string $func, array $params = []) {
             }
             $apikey_logging = $apikey_options['log_write']; # this is used in log_write
 
+            # Check if this key is specifically disallowed
             if (in_array($endpoint, $apikey_options["disallowedEndpoints"])) {
                 die(err("You are blacklisted/disallowed from using this endpoint."));
             }
         
+            # Check allowed endpoints
             if (!in_array("*", $apikey_options["allowedEndpoints"]) && !in_array($endpoint, $apikey_options["allowedEndpoints"])) {
                 die(err("You do not have access to this endpoint.", 403));
             }
+
+            # Sleep
+            if (!empty($apikey_options["sleep"])) {
+                $sleep = $apikey_options["sleep"];
+                if ($sleep > 0) {
+                    sleep($sleep);
+                }
+            }
+
         }
         /* ────────────────────────────────────────────────────────────────────────── */
 
