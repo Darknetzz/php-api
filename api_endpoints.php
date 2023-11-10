@@ -12,6 +12,16 @@
     - The endpoint function names MUST be prefixed with api_
     - Endpoints should ALWAYS return an array, regardless of what or how many things you want to return.
     - Endpoint-specific errors can be handled in the function, but please return an array anyway.
+
+
+| Global parameters | Description                                | Default | Possible values        |
+| :---------------- | :----------------------------------------- | :------ | :--------------------- |
+| filter            | Filters response to only data or status    | None    | httpCode, data, status |
+| filterdata        | Filters response data to a single field    | None    | Depends on endpoint    |
+| clean             | Omits HTTP status code and text            | false   | true, false            |
+| compact           | Disables JSON pretty print                 | false   | true, false            |
+| verbose           | Prints out a lot of additional information | false   | true, false            |
+
 */
 
 
