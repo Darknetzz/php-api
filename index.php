@@ -35,10 +35,11 @@ require_once('api_includes.php');
 header('Content-type: application/json;'); 
 
 # The endpoint should always be provided in GET
-if (!var_assert($_GET['endpoint'])) {
+# EDIT 2023-11-06: does it really?
+if (!var_assert($_REQUEST['endpoint'])) {
     die(err("No endpoint provided.", 404));
 }
-$endpoint = "api_".$_GET['endpoint'];
+$endpoint = "api_".$_REQUEST['endpoint'];
 
 # Apart from that we don't wish to extinguish between request methods (for now), unless unspecified.
 if (empty($_SERVER['REQUEST_METHOD'])) {

@@ -289,7 +289,7 @@ function api_response(string $status, mixed $data) : string {
     log_write("api_response(): The API responded with a status of $status.");
 
     $pretty_print = JSON_UNESCAPED_UNICODE;
-    if (var_assert(($options['compact']), true)) {
+    if (var_assert(($params['compact']), true)) {
         $pretty_print = JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT;
     }
 
@@ -438,13 +438,24 @@ function callFunction(string $func, array $params = []) {
             }
             $apikey_logging = $apikey_options['log_write']; # this is used in log_write
 
+            # Check if this key is specifically disallowed
             if (in_array($endpoint, $apikey_options["disallowedEndpoints"])) {
                 die(err("You are blacklisted/disallowed from using this endpoint."));
             }
         
+            # Check allowed endpoints
             if (!in_array("*", $apikey_options["allowedEndpoints"]) && !in_array($endpoint, $apikey_options["allowedEndpoints"])) {
                 die(err("You do not have access to this endpoint.", 403));
             }
+
+            # Sleep
+            if (!empty($apikey_options["sleep"])) {
+                $sleep = $apikey_options["sleep"];
+                if ($sleep > 0) {
+                    sleep($sleep);
+                }
+            }
+
         }
         /* ────────────────────────────────────────────────────────────────────────── */
 
@@ -464,7 +475,7 @@ function callFunction(string $func, array $params = []) {
             $secondsSinceLastCalled = secondsSinceLastCalled($func, $valid_apikey);
             
             if (!$secondsSinceLastCalled && $apikey_options['noTimeOut'] === false) {
-                die(err("Function secondsSinceLastCalled() failed. Please stop spamming this API."));
+                die(err("Function secondsSinceLastCalled() failed. Please stop spamming this API.", 403));
             }
 
             $verboseInfo = [
@@ -495,7 +506,7 @@ function callFunction(string $func, array $params = []) {
                     "secondsSinceLastCalled" => $secondsSinceLastCalled,
                     "secondsToWait" => (COOLDOWN_TIME - $secondsSinceLastCalled),
                     "noTimeOut" => $apikey_options["noTimeOut"],
-                ]));
+                ]), 403);
             // return err("The endpoint '$func' was called a mere ".$secondsSinceLastCalled." seconds ago! Please wait another ".(COOLDOWN_TIME - $secondsSinceLastCalled)." seconds.");
         }
 

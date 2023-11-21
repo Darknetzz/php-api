@@ -19,6 +19,7 @@ available options:
     | disallowedEndpoints | []            | Endpoints this key specifically doesn't have access to, will override allowedEndpoints                  |
     | noTimeOut           | false         | Specify if this key can bypass the timeout                                                              |
     | cooldown            | COOLDOWN_TIME | Time in seconds this key has to wait between API calls (COOLDOWN_TIME is specified in api_settings.php) |
+    | sleep               | SLEEP_TIME    | Time in seconds this key has to wait for a response                                                     |
     | notify              | true          | Whether or not to notify the owner of this API when an endpoint is used.                                |
     | log_write           | true          | Whether or not to log requests with this API key to file (requires LOG_ENABLE)                          |
 */

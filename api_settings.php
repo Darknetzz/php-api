@@ -90,7 +90,8 @@ define("OPEN_ENDPOINTS",
 $now                     = round(microtime(true));
 define("NOW"             , $now);
 define("LAST_CALLED_JSON", "endpoints_lastcalled.json");
-define("COOLDOWN_TIME"   , 5);
+define("COOLDOWN_TIME"   , 1);
+define("SLEEP_TIME"      , 2);
 
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -101,6 +102,7 @@ define("APIKEY_DEFAULT_OPTIONS", [
     "disallowedEndpoints" => [],            # forbid this key from an endpoint (will override allowedEndpoints)
     "noTimeOut"           => false,         # allows this key to make unlimited requests with no cooldown
     "cooldown"            => COOLDOWN_TIME, # default cooldown time
+    "sleep"               => SLEEP_TIME,    # default time to sleep before response
     "notify"              => false,         # will notify you if you have set up SMS config
     "log_write"           => true,          # enables write_log function where possible if LOG_ENABLE !== false
 ]);
