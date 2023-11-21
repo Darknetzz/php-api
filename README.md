@@ -46,6 +46,12 @@ $ cd /var/www/html
 $ git clone https://github.com/Darknetzz/php_api.git
 ```
 
+If you want the **bleeding edge** dev release, git clone the dev branch instead.
+```bash
+$ cd /var/www/html
+$ git clone -b dev https://github.com/Darknetzz/php_api.git
+```
+
 You have now installed the API to https://<YOUR_SERVER>/php_api
 
 <!-- ─────────────────────────────────────────────────────────────────────── -->
