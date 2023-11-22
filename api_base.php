@@ -87,9 +87,18 @@ function fh_close(mixed &$fh) {
 /*                                endpoint_open                               */
 /* ────────────────────────────────────────────────────────────────────────── */
 function endpoint_open(string $endpoint) {
-    foreach (OPEN_ENDPOINTS as $openep) {
-        if ($endpoint == $openep || 'api_'.$endpoint == $openep) {
-            return true;
+    if (WHITELIST_MODE == True) {
+        foreach (OPEN_ENDPOINTS as $openep) {
+            if ($endpoint == $openep || 'api_'.$endpoint == $openep) {
+                return True;
+            }
+        }
+    }
+    if (WHITELIST_MODE == False) {
+        foreach (PROTECTED_ENDPOINTS as $protep) {
+            if ($endpoint == $protep || 'api_'.$endpoint == $protep) {
+                return True;
+            }
         }
     }
     return false;
