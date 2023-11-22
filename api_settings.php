@@ -74,10 +74,33 @@ define("VALID_FILTERS",
 );
 
 /* ────────────────────────────────────────────────────────────────────────── */
+/*         WHITELIST_MODE:                                                    */
+/*           [TRUE] / Whitelist mode (default): will protect all endpoints    */
+/*            except the ones defined in OPEN_ENDPOINTS                       */
+/* ────────────────────────────────────────────────────────────────────────── */
+/*           [FALSE] / Blacklist mode (not recommended):                      */
+/*           will only consider the PROTECTED_ENDPOINT list,                  */
+/*           everything else will be open                                     */
+/* ────────────────────────────────────────────────────────────────────────── */
+# TODO: This doesn't do anything yet.
+define("WHITELIST_MODE", true);
+
+/* ────────────────────────────────────────────────────────────────────────── */
 /* OPEN_ENDPOINTS: Specifies endpoints that do not require authorization.     */
 /*       Be careful with this as you are potentially exposing yourself.       */
 /* ────────────────────────────────────────────────────────────────────────── */
 define("OPEN_ENDPOINTS",
+    [
+        "api_some_open_endpoint",
+        "api_another_open_endpoint",
+    ]
+);
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/* PROTECTED_ENDPOINTS: Specifies endpoints that requires authorization,      */
+/* This only applies if <SOME OTHER CONSTANT> is set to blacklist mode.       */
+/* ────────────────────────────────────────────────────────────────────────── */
+define("PROTECTED_ENDPOINTS",
     [
         "api_some_open_endpoint",
         "api_another_open_endpoint",
