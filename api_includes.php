@@ -22,13 +22,21 @@ $includes = [
 ];
 
 foreach ($includes as $include) {
-    # Custom
+
+    # Folder (will replace Custom)
+    $folder = explode("_", $include)[1];
+
+    # Custom (will replace Default)
     $custom = 'custom_'.$include.'.php';
 
     # Default
     $default = $include.'.php';
 
-    if (file_exists($custom)) {
+    if (is_dir($folder)) {
+        foreach (glob($folder."/*.php") as $file) {
+            require_once($file);
+        }
+    } elseif (file_exists($custom)) {
         define('INCLUDE_'.strtoupper($include), $custom);
         require_once($custom);
     } elseif (file_exists($default)) {
