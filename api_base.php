@@ -96,7 +96,7 @@ function endpoint_open(string $endpoint) {
     }
     if (WHITELIST_MODE == False) {
         foreach (PROTECTED_ENDPOINTS as $protep) {
-            if ($endpoint == $protep || 'api_'.$endpoint == $protep) {
+            if ($endpoint != $protep && 'api_'.$endpoint != $protep) {
                 return True;
             }
         }
