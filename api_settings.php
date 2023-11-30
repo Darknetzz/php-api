@@ -10,129 +10,13 @@
     It contains some default values that could be tweaked.
 */
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                   General                                  */
-/* ────────────────────────────────────────────────────────────────────────── */
-# Will redirect user to somewhere else than index.php if set to true
-# if there are no parameters given (endpoint, apikey etc.)
-define('ENABLE_CUSTOM_INDEX_NOPARAMS', false);
-define('ENABLE_CUSTOM_INDEX', false);
-
-# What page should the user be redirected to? Also supports full URLs
-# Example: 'https://example.com/wiki/api'
-define('CUSTOM_INDEX_NOPARAMS', 'custom_index.php');
-define('CUSTOM_INDEX', 'custom_index.php');
-
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                              HTTP Status codes                             */
-/* ────────────────────────────────────────────────────────────────────────── */
-define("HTTP_STATUS_CODES", [
-    "ERROR" => 500,
-    "OK" => 200,
-]);
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                          Response format defaults                          */
-/* ────────────────────────────────────────────────────────────────────────── */
-define("DEFAULT_FILTER"      , null);
-define("DEFAULT_JSON_COMPACT", false);
-define("VERBOSE_API"         , false); # appends additional information to json response (soon)
-define("NOTIFY_API"          , false); # notifiy API usage on SMS (unless API key has notify == false)
-define("NOTIFY_NUMBER"       , "12345678");
-define("LOG_ENABLE"          , true);       # whether or not to enable logging API requests to a file
-define("LOG_FILE"            , 'api.log');  # file to write to (if LOG_ENABLE !== false)
-define("LOG_LEVEL"           , 'info');     # see below
-define("LOG_LEVELS"          ,  
-    [
-        'WARNING' => 10,
-        'INFO'    => 20,
-        'VERBOSE' => 30,
-    ]);
-
-define("GLOBAL_PARAMS",
-        [
-            "apikey",
-            "endpoint",
-            "filter",
-            "filterdata",
-            "clean",
-            "compact",
-            "verbose",
-        ]
-);
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/*       VALID_FILTERS: Specifies available filters (for all endpoints)       */
-/* ────────────────────────────────────────────────────────────────────────── */
-define("VALID_FILTERS",
-    [
-        "httpCode",
-        "data",
-        "status",
-    ]
-);
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/*         WHITELIST_MODE:                                                    */
-/*           [TRUE] / Whitelist mode (default): will protect all endpoints    */
-/*            except the ones defined in OPEN_ENDPOINTS                       */
-/* ────────────────────────────────────────────────────────────────────────── */
-/*           [FALSE] / Blacklist mode (not recommended):                      */
-/*           will only consider the PROTECTED_ENDPOINT list,                  */
-/*           everything else will be open                                     */
-/* ────────────────────────────────────────────────────────────────────────── */
-# TODO: This doesn't do anything yet.
-define("WHITELIST_MODE", true);
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/* OPEN_ENDPOINTS: Specifies endpoints that do not require authorization.     */
-/*       Be careful with this as you are potentially exposing yourself.       */
-/* ────────────────────────────────────────────────────────────────────────── */
-define("OPEN_ENDPOINTS",
-    [
-        "api_some_open_endpoint",
-        "api_another_open_endpoint",
-    ]
-);
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/* PROTECTED_ENDPOINTS: Specifies endpoints that requires authorization,      */
-/* This only applies if <SOME OTHER CONSTANT> is set to blacklist mode.       */
-/* ────────────────────────────────────────────────────────────────────────── */
-define("PROTECTED_ENDPOINTS",
-    [
-        "api_some_open_endpoint",
-        "api_another_open_endpoint",
-    ]
-);
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                 Time stuff                                 */
-/* ────────────────────────────────────────────────────────────────────────── */
-$now                     = round(microtime(true));
-define("NOW"             , $now);
-define("LAST_CALLED_JSON", "endpoints_lastcalled.json");
-define("COOLDOWN_TIME"   , 1);
-define("SLEEP_TIME"      , 2);
-
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                           API Key default options                          */
-/* ────────────────────────────────────────────────────────────────────────── */
-define("APIKEY_DEFAULT_OPTIONS", [
-    "allowedEndpoints"    => ["*"],         # allowed endpoints ("*" = all endpoints)
-    "disallowedEndpoints" => [],            # forbid this key from an endpoint (will override allowedEndpoints)
-    "noTimeOut"           => false,         # allows this key to make unlimited requests with no cooldown
-    "cooldown"            => COOLDOWN_TIME, # default cooldown time
-    "sleep"               => SLEEP_TIME,    # default time to sleep before response
-    "notify"              => false,         # will notify you if you have set up SMS config
-    "log_write"           => true,          # enables write_log function where possible if LOG_ENABLE !== false
-]);
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                            Funny error messages                            */
-/* ────────────────────────────────────────────────────────────────────────── */
-define("FUNNY_RESPONSES_ENABLE", true);
-
+/* ───────────────────────────────────────────────────────────────────── */
+/*                         NOTE: Edit 2023-11-30:                        */
+/* ───────────────────────────────────────────────────────────────────── */
+/*                                                                       */
+/*    The defaults are now set in api_defaults.php                       */
+/*    All we have to do here is include it, it will define               */
+/*    constants that aren't already  defined by a custom settings file.  */
+/* ───────────────────────────────────────────────────────────────────── */
+include_once("api_defaults.php");
 ?>

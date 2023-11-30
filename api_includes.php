@@ -15,6 +15,8 @@ I did this mostly because I needed to test stuff for myself without git pushing.
 
 $includes = [
     'api_settings', # settings is already included in index.php
+    # NOTE: We do not need to include api_defaults as it's included by api_settings
+    #'api_defaults',
     'api_base',
     'api_endpoints',
     'api_keys',
