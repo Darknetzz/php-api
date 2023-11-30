@@ -64,13 +64,14 @@ All you need to do now is configure it to your likings, in order to do this, you
 
 <!-- ──────────────────────────── File summary ───────────────────────────── -->
 ### 📄 File summary
-| File                                     | Description                                                                                                  |
-| :--------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
-| [api_settings.php](#api-settings)        | You can change some default settings here.                                                                   |
-| [api_keys.php](#api-keys)                | Put your securely generated API keys here. Pro tip: [Use a generator!](https://roste.org/rand/#rsgen) |
-| [api_endpoints.php](#api-endpoints)      | This is where you specify your endpoints.                                                                    |
-| [api_aliases.php](#api-endpoint-aliases) | This is where you specify aliases for your endpoints. That means an endpoint can have several names.         |
-| [api_base.php](#api-base)                | The most fundamental functions. Don't change this file unless you know what you are doing.                   |
+| File                                     | Description                                                                                                      |
+| :--------------------------------------- | :--------------------------------------------------------------------------------------------------------------- |
+| [api_settings.php](#api-settings)        | You can change some default settings here.                                                                       |
+| [api_defaults.php](#api-defaults)        | This file contains all the default settings, should not be edited. Create your own custom settings file instead. |
+| [api_keys.php](#api-keys)                | Put your securely generated API keys here. Pro tip: [Use a generator!](https://roste.org/rand/#rsgen)            |
+| [api_endpoints.php](#api-endpoints)      | This is where you specify your endpoints.                                                                        |
+| [api_aliases.php](#api-endpoint-aliases) | This is where you specify aliases for your endpoints. That means an endpoint can have several names.             |
+| [api_base.php](#api-base)                | The most fundamental functions. Don't change this file unless you know what you are doing.                       |
 
 
 
@@ -81,28 +82,30 @@ All you need to do now is configure it to your likings, in order to do this, you
 This is where most of the actual configuration is done.
 In this file you will see a lot of options:
 
-| CONSTANT                 | DESCRIPTION                                                                                           | DEFAULT                                                                                               |
-| :----------------------- | :---------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------- |
-| `ENABLE_CUSTOM_INDEX`    | Whether or not to enable a custom index.php if no endpoint or parameters are given.                   | `false`                                                                                               |
-| `CUSTOM_INDEX_NOPARAMS`  | If `ENABLE_CUSTOM_INDEX` is true, the user will be redirected to this page. Can be URL or local file. | `custom_index.php`                                                                                    |
-| `HTTP_STATUS_CODES`      | HTTP status code translations. Should not be changed.                                                 | `Array`                                                                                               |
-| `DEFAULT_FILTER`         |                                                                                                       | `null`                                                                                                |
-| `DEFAULT_JSON_COMPACT`   |                                                                                                       | `false`                                                                                               |
-| `VERBOSE_API`            |                                                                                                       | `false`                                                                                               |
-| `NOTIFY_API`             | Whether or not to enable notifications of endpoint usage.                                             | `false`                                                                                               |
-| `NOTIFY_NUMBER`          | If `NOTIFY_API` is enabled (and properly configured), this number will recieve an SMS.                | `"12345678"`                                                                                          |
-| `LOG_ENABLE`             | Whether or not to enable logging.                                                                     | `true`                                                                                                |
-| `LOG_FILE`               | Log file to write logs to if `LOG_ENABLE` is true.                                                    | `"api.log"`                                                                                           |
-| `LOG_LEVEL`              | Default log level                                                                                     | `"info"`                                                                                              |
-| `LOG_LEVELS`             | Different levels of logging. Should not be changed.                                                   | `'WARNING' => 10``'INFO' => 20``'VERBOSE' => 30`                                              |
+| CONSTANT                 | DESCRIPTION                                                                                           | DEFAULT                                                                       |
+| :----------------------- | :---------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------- |
+| `ENABLE_CUSTOM_INDEX`    | Whether or not to enable a custom index.php if no endpoint or parameters are given.                   | `false`                                                                       |
+| `CUSTOM_INDEX_NOPARAMS`  | If `ENABLE_CUSTOM_INDEX` is true, the user will be redirected to this page. Can be URL or local file. | `custom_index.php`                                                            |
+| `HTTP_STATUS_CODES`      | HTTP status code translations. Should not be changed.                                                 | `Array`                                                                       |
+| `DEFAULT_FILTER`         |                                                                                                       | `null`                                                                        |
+| `DEFAULT_JSON_COMPACT`   |                                                                                                       | `false`                                                                       |
+| `VERBOSE_API`            |                                                                                                       | `false`                                                                       |
+| `NOTIFY_API`             | Whether or not to enable notifications of endpoint usage.                                             | `false`                                                                       |
+| `NOTIFY_NUMBER`          | If `NOTIFY_API` is enabled (and properly configured), this number will recieve an SMS.                | `"12345678"`                                                                  |
+| `LOG_ENABLE`             | Whether or not to enable logging.                                                                     | `true`                                                                        |
+| `LOG_FILE`               | Log file to write logs to if `LOG_ENABLE` is true.                                                    | `"api.log"`                                                                   |
+| `LOG_LEVEL`              | Default log level                                                                                     | `"info"`                                                                      |
+| `LOG_LEVELS`             | Different levels of logging. Should not be changed.                                                   | `'WARNING' => 10``'INFO' => 20``'VERBOSE' => 30`                              |
 | `GLOBAL_PARAMS`          | An array of global parameters which can be used anywhere (regardless of endpoint)                     | `"apikey"``"endpoint"``"filter"``"filterdata"``"clean"``"compact"``"verbose"` |
-| `VALID_FILTERS`          |                                                                                                       |                                                                                                       |
-| `OPEN_ENDPOINTS`         |                                                                                                       |                                                                                                       |
-| `NOW`                    |                                                                                                       | `round(microtime(true))`                                                                              |
-| `LAST_CALLED_JSON`       |                                                                                                       | `endpoints_lastcalled.json`                                                                           |
-| `COOLDOWN_TIME`          |                                                                                                       | `5`                                                                                                   |
-| `APIKEY_DEFAULT_OPTIONS` |                                                                                                       |                                                                                                       |
-| `FUNNY_RESPONSES_ENABLE` |                                                                                                       | `true`                                                                                                |
+| `VALID_FILTERS`          |                                                                                                       |                                                                               |
+| `OPEN_ENDPOINTS`         |                                                                                                       |                                                                               |
+| `NOW`                    | Microtime (now) - used for updating LAST_CALLED_JSON                                                  | `round(microtime(true))`                                                      |
+| `LAST_CALLED_JSON`       | Filename to store timestamps of last called endpoints                                                 | `endpoints_lastcalled.json`                                                   |
+| `SLEEP_TIME`             | Specifies how long an API call will sleep before sending a response (to prevent spam)                 | `2`                                                                           |
+| `COOLDOWN_TIME`          | Specifies how long caller must wait between queries to the same endpoint                              | `5`                                                                           |
+| `APIKEY_DEFAULT_OPTIONS` |                                                                                                       |                                                                               |
+| `FUNNY_RESPONSES_ENABLE` |                                                                                                       | `true`                                                                        |
+| `WHITELIST_MODE`         | Specifies whether to use whitelist mode for endpoints                                                 | `true`                                                                        |
 
 
 
@@ -128,14 +131,14 @@ addAPIKey(
 ````
 
 **Option parameters**
-| NAME                  | DEFAULT VALUE   | DESCRIPTION                                                                                             |
-| :-------------------- | :-------------- | :------------------------------------------------------------------------------------------------------ |
-| `allowedEndpoints`    | `["*"]`         | Endpoints this key has access to. If there is a * in the array the key will be unrestricted.            |
-| `disallowedEndpoints` | `[]`            | Endpoints this key specifically doesn't have access to, will override allowedEndpoints                  |
-| `noTimeOut`           | `false`         | Specify if this key can bypass the timeout                                                              |
-| `timeout`             | `COOLDOWN_TIME` | Time in seconds this key has to wait between API calls (COOLDOWN_TIME is specified in api_settings.php) |
-| `notify`              | `true`          | Whether or not to notify the owner of this API when an endpoint is used.                                |
-| `log_write`           | `true`          | Whether or not to write requests with this API key to a log file of your choosing.                      |
+| TYPE    | NAME                  | DEFAULT VALUE   | DESCRIPTION                                                                                             |
+| :------ | :-------------------- | :-------------- | ------------------------------------------------------------------------------------------------------- |
+| `array` | `allowedEndpoints`    | `["*"]`         | Endpoints this key has access to. If there is a * in the array the key will be unrestricted.            |
+| `array` | `disallowedEndpoints` | `[]`            | Endpoints this key specifically doesn't have access to, will override allowedEndpoints                  |
+| `bool`  | `noTimeOut`           | `false`         | Specify if this key can bypass the timeout                                                              |
+| `int`   | `timeout`             | `COOLDOWN_TIME` | Time in seconds this key has to wait between API calls (COOLDOWN_TIME is specified in api_settings.php) |
+| `bool`  | `notify`              | `true`          | Whether or not to notify the owner of this API when an endpoint is used.                                |
+| `bool`  | `log_write`           | `true`          | Whether or not to write requests with this API key to a log file of your choosing.                      |
 
 
 
@@ -147,6 +150,8 @@ addAPIKey(
 
 To create an endpoint that you can talk to, open up the file `api_endpoints.php`.
 Here are some example endpoints you can configure.
+
+If you want to group your endpoints, create a subfolder called `endpoints`. All files in that folder will be included.
 
 
 
