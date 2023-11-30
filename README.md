@@ -131,14 +131,14 @@ addAPIKey(
 ````
 
 **Option parameters**
-| NAME                  | DEFAULT VALUE   | DESCRIPTION                                                                                             |
-| :-------------------- | :-------------- | :------------------------------------------------------------------------------------------------------ |
-| `allowedEndpoints`    | `["*"]`         | Endpoints this key has access to. If there is a * in the array the key will be unrestricted.            |
-| `disallowedEndpoints` | `[]`            | Endpoints this key specifically doesn't have access to, will override allowedEndpoints                  |
-| `noTimeOut`           | `false`         | Specify if this key can bypass the timeout                                                              |
-| `timeout`             | `COOLDOWN_TIME` | Time in seconds this key has to wait between API calls (COOLDOWN_TIME is specified in api_settings.php) |
-| `notify`              | `true`          | Whether or not to notify the owner of this API when an endpoint is used.                                |
-| `log_write`           | `true`          | Whether or not to write requests with this API key to a log file of your choosing.                      |
+| TYPE    | NAME                  | DEFAULT VALUE   | DESCRIPTION                                                                                             |
+| :------ | :-------------------- | :-------------- | ------------------------------------------------------------------------------------------------------- |
+| `array` | `allowedEndpoints`    | `["*"]`         | Endpoints this key has access to. If there is a * in the array the key will be unrestricted.            |
+| `array` | `disallowedEndpoints` | `[]`            | Endpoints this key specifically doesn't have access to, will override allowedEndpoints                  |
+| `bool`  | `noTimeOut`           | `false`         | Specify if this key can bypass the timeout                                                              |
+| `int`   | `timeout`             | `COOLDOWN_TIME` | Time in seconds this key has to wait between API calls (COOLDOWN_TIME is specified in api_settings.php) |
+| `bool`  | `notify`              | `true`          | Whether or not to notify the owner of this API when an endpoint is used.                                |
+| `bool`  | `log_write`           | `true`          | Whether or not to write requests with this API key to a log file of your choosing.                      |
 
 
 
@@ -150,6 +150,8 @@ addAPIKey(
 
 To create an endpoint that you can talk to, open up the file `api_endpoints.php`.
 Here are some example endpoints you can configure.
+
+If you want to group your endpoints, create a subfolder called `endpoints`. All files in that folder will be included.
 
 
 
