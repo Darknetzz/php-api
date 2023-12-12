@@ -5,6 +5,7 @@
 /* ──────── Made with ❤️ by darknetzz @ https://github.com/darknetzz ──────── */
 /* ────────────────────────────────────────────────────────────────────────── */
 
+header('Access-Control-Allow-Origin: *');
 
 # Require settings file -
 # this needs to be done here because we allow custom a index
