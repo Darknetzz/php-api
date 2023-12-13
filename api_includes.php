@@ -38,7 +38,8 @@ try {
                 require_once($file);
             }
             # We don't continue here because we want to include the custom file if it exists as well
-            // continue;
+            # Actually, we might want to...
+            continue;
         } 
         
         # The custom file will be included instead of the default file

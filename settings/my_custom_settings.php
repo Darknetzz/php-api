@@ -1,25 +1,18 @@
 <?php
 
 /* ────────────────────────────────────────────────────────────────────────── */
-/*                                   api_settings.php                         */
+/*                             my_custom_settings.php                         */
 /* ────────────────────────────────────────────────────────────────────────── */
 /* ──────── Made with ❤️ by darknetzz @ https://github.com/darknetzz ──────── */
 /* ────────────────────────────────────────────────────────────────────────── */
 /*
-    # This file should contain the default values for everything in settings -
-    # and it should be applied if the constants are not defined, which could cause an error.
-
-    # NOTE: Please do not change this file directly, change the values in
-    #       the 'settings' folder instead.
+    This file should contain custom settings for your API.
+    It contains some default values that could be tweaked.
 */
-
-foreach (glob("settings/*.php") as $file) {
-    require_once($file);
-}
 
 try {
 
-    $defaults = [
+    $customs = [
         /* ───────────────────────────────────────────────────────────────────── */
         /*                                General                                */
         /* ───────────────────────────────────────────────────────────────────── */
@@ -128,7 +121,7 @@ try {
         "FUNNY_RESPONSES_ENABLE" => True,
     ];
 
-    foreach ($defaults as $const => $val) {
+    foreach ($customs as $const => $val) {
         if (!defined($const)) {
             define($const, $val);
         }

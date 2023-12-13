@@ -11,16 +11,13 @@ header('Access-Control-Allow-Origin: *;');
 /* ───────────────────────────────────────────────────────────────────── */
 /*                         Require settings file                         */
 /* ───────────────────────────────────────────────────────────────────── */
-#       this needs to be done here because we allow custom a index
+# this needs to be done here because we allow custom a index
 # Check for custom settings file first, then include api_settings.php regardless
 # as it will set defaults if it's not defined by custom_settings.
-$custom_settings    = 'custom_api_settings.php';
-$default_settings   = 'api_settings.php';
-
-if (file_exists($custom_settings)) {
-    require_once($custom_settings);
+foreach (glob("settings/*.php") as $filename) {
+    require_once($filename);
 }
-require_once($default_settings);
+require_once('api_settings.php');
 /* ───────────────────────────────────────────────────────────────────── */
 
 if (defined('ENABLE_CUSTOM_INDEX_NOPARAMS') 

@@ -8,7 +8,7 @@
 /* 
     This file contains the API base functions - in other words essential functions
     for the API to work. You can of course tweak it however you want, but most of the config
-    should be done in api_settings.php and not here, unless you know what you're doing.
+    should be done in `settings` and not here, unless you know what you're doing.
 */
 
 

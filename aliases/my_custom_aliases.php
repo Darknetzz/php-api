@@ -1,7 +1,7 @@
 <?php
 
 /* ────────────────────────────────────────────────────────────────────────── */
-/*                                   api_aliases.php                        */
+/*                           my_custom_api_aliases.php                        */
 /* ────────────────────────────────────────────────────────────────────────── */
 /* ──────── Made with ❤️ by darknetzz @ https://github.com/darknetzz ──────── */
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -23,12 +23,16 @@ $aliases = [
     "api_example_endpoint"      => ["api_example"],
 ];
 
-foreach ($aliases as $funcName => $aliases) {
+foreach ($aliases as $funcName => $aliasNames) {
     if (function_exists($funcName)) {
-        foreach ($aliases as $alias) {
-                // echo "setting function $funcName as $alias<br>";
-                $use = "use function $funcName as $alias;";
-                eval($use);
+        foreach ($aliasNames as $alias) {
+            if (function_exists($alias)) {
+                // die("Alias '$alias' already exists.");
+                continue;
+            }
+            $GLOBALS[$alias] = function() use ($funcName) {
+                return call_user_func_array($funcName, func_get_args());
+            };
         }
     }
 }
