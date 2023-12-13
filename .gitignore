@@ -2,3 +2,4 @@ custom_*
 *.log
 *.json
 endpoints
+archive

@@ -5,29 +5,37 @@
 /* ──────── Made with ❤️ by darknetzz @ https://github.com/darknetzz ──────── */
 /* ────────────────────────────────────────────────────────────────────────── */
 
+header('Content-type: application/json;');
+header('Access-Control-Allow-Origin: *;');
 
-# Require settings file -
+/* ───────────────────────────────────────────────────────────────────── */
+/*                         Require settings file                         */
+/* ───────────────────────────────────────────────────────────────────── */
 # this needs to be done here because we allow custom a index
-$settings = 'api_settings.php';
-if (file_exists('custom_'.$settings)) {
-    require_once('custom_'.$settings);
-} else {
-    require_once($settings);
+# Check for custom settings file first, then include api_settings.php regardless
+# as it will set defaults if it's not defined by custom_settings.
+foreach (glob("settings/*.php") as $filename) {
+    require_once($filename);
 }
+require_once('api_settings.php');
+/* ───────────────────────────────────────────────────────────────────── */
 
-if (defined('ENABLE_CUSTOM_INDEX_NOPARAMS') &&
-    defined('CUSTOM_INDEX_NOPARAMS')
+if (defined('ENABLE_CUSTOM_INDEX_NOPARAMS') 
+    && ENABLE_CUSTOM_INDEX_NOPARAMS === true
+    && defined('CUSTOM_INDEX_NOPARAMS')
     && empty($_REQUEST) 
     && basename(__FILE__) !== basename(CUSTOM_INDEX_NOPARAMS)) {
     header('Location: '.CUSTOM_INDEX_NOPARAMS);
-    die(); # the header should redirect us, but make sure we stop running here.
+    // die(); # the header should redirect us, but make sure we stop running here.
 }
 
-if ($_REQUEST 
-    && ENABLE_CUSTOM_INDEX === true 
+if (defined('ENABLE_CUSTOM_INDEX')
+    && ENABLE_CUSTOM_INDEX === true
+    && defined('CUSTOM_INDEX')
+    && !empty($_REQUEST)
     && basename(__FILE__) !== basename(CUSTOM_INDEX)) {
     header('Location: '.CUSTOM_INDEX."?".http_build_query($_REQUEST));
-    die(); # the header should redirect us, but make sure we stop running here.
+    // die(); # the header should redirect us, but make sure we stop running here.
 }
 
 require_once('api_includes.php');
