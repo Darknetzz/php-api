@@ -14,7 +14,6 @@ header('Access-Control-Allow-Origin: *;');
 # this needs to be done here because we allow custom a index
 # Check for custom settings file first, then include api_settings.php regardless
 # as it will set defaults if it's not defined by custom_settings.
-
 require_once('api_settings.php');
 /* ───────────────────────────────────────────────────────────────────── */
 
@@ -36,7 +35,10 @@ if (defined('ENABLE_CUSTOM_INDEX')
     // die(); # the header should redirect us, but make sure we stop running here.
 }
 
-require_once('api_includes.php');
+require_once('api_base.php');
+require_once('api_endpoints.php');
+require_once('api_keys.php');
+require_once('api_aliases.php');
 
 header('Content-type: application/json;'); 
 
