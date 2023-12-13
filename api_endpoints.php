@@ -1,39 +1,39 @@
 <?php
 
 /* ────────────────────────────────────────────────────────────────────────── */
-/*                                   api_settings.php                         */
+/*                                   api_endpoints.php                         */
 /* ────────────────────────────────────────────────────────────────────────── */
 /* ──────── Made with ❤️ by darknetzz @ https://github.com/darknetzz ──────── */
 /* ────────────────────────────────────────────────────────────────────────── */
 /*
-    # This file should contain the default values for everything in settings -
+    # This file should contain the default values for everything in endpoints -
     # and it should be applied if the constants are not defined, which could cause an error.
 
     # NOTE: Please do not change this file directly, change the values in
-    #       the 'settings' folder instead.
+    #       the 'endpoints' folder instead.
 */
 
 do {
-    # Check if settings folder contains custom configuration files.
-    $settings_files = glob("settings/*.php");   # Get all files in the settings folder.
-    $count          = count($settings_files);   # Count the number of files in the settings folder.
+    # Check if endpoints folder contains custom configuration files.
+    $endpoints_files = glob("endpoints/*.php");   # Get all files in the endpoints folder.
+    $count          = count($endpoints_files);   # Count the number of files in the endpoints folder.
 
-    if (empty($settings_files)) {
-        die("No settings files found in settings folder.");
+    if (empty($endpoints_files)) {
+        die("No endpoints files found in endpoints folder.");
     }
 
-    $excludes       = [
-        "settings/default_settings.php",
-        "settings/custom_api_settings.php",
+    $excludes = [
+        "endpoints/my_custom_endpoints.php",
     ];
+    $count_excludes = count($excludes);
     
-    if ($count == 2) {
-        require_once("settings/default_settings.php");
+    if ($count == $count_excludes) {
+        require_once("endpoints/my_custom_endpoints.php");
         break;
     }
     
-    if ($count > 2) {
-        foreach (glob("settings/*.php") as $file) {
+    if ($count > $count_excludes) {
+        foreach (glob("endpoints/*.php") as $file) {
             if (!in_array($file, $excludes)) {
                 require_once($file);
             }
@@ -41,7 +41,7 @@ do {
         break;
     }
 
-    die("Something went wrong while loading settings files.");
+    die("Something went wrong while loading endpoints files.");
     
 } while (False);
 ?>
