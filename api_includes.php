@@ -6,10 +6,10 @@
 /* ────────────────────────────────────────────────────────────────────────── */
 /*
 
-If you have a file named custom_[anything from $include].php,
-the custom file will be included instead of the main file.
+    If you have a file named custom_[anything from $include].php,
+    the custom file will be included instead of the main file.
 
-I did this mostly because I needed to test stuff for myself without git pushing.
+    I did this mostly because I needed to test stuff for myself without git pushing.
 
 */
 
