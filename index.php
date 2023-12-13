@@ -5,18 +5,6 @@
 /* ──────── Made with ❤️ by darknetzz @ https://github.com/darknetzz ──────── */
 /* ────────────────────────────────────────────────────────────────────────── */
 
-function shutdown_find_exit()
-{
-    var_dump($GLOBALS['dbg_stack']);
-}
-register_shutdown_function('shutdown_find_exit');
-function write_dbg_stack()
-{
-    $GLOBALS['dbg_stack'] = debug_backtrace();
-}
-register_tick_function('write_dbg_stack');
-declare(ticks=1);
-
 header('Content-type: application/json;');
 header('Access-Control-Allow-Origin: *;');
 
@@ -28,11 +16,9 @@ header('Access-Control-Allow-Origin: *;');
 # as it will set defaults if it's not defined by custom_settings.
 $custom_settings    = 'custom_api_settings.php';
 $default_settings   = 'api_settings.php';
+
 if (file_exists($custom_settings)) {
     require_once($custom_settings);
-}
-if (!file_exists($default_settings)) {
-    die("Required default settings file '$default_settings' not found.");
 }
 require_once($default_settings);
 /* ───────────────────────────────────────────────────────────────────── */
@@ -43,7 +29,7 @@ if (defined('ENABLE_CUSTOM_INDEX_NOPARAMS')
     && empty($_REQUEST) 
     && basename(__FILE__) !== basename(CUSTOM_INDEX_NOPARAMS)) {
     header('Location: '.CUSTOM_INDEX_NOPARAMS);
-    die(); # the header should redirect us, but make sure we stop running here.
+    // die(); # the header should redirect us, but make sure we stop running here.
 }
 
 if (defined('ENABLE_CUSTOM_INDEX')
@@ -52,7 +38,7 @@ if (defined('ENABLE_CUSTOM_INDEX')
     && !empty($_REQUEST)
     && basename(__FILE__) !== basename(CUSTOM_INDEX)) {
     header('Location: '.CUSTOM_INDEX."?".http_build_query($_REQUEST));
-    die(); # the header should redirect us, but make sure we stop running here.
+    // die(); # the header should redirect us, but make sure we stop running here.
 }
 
 require_once('api_includes.php');

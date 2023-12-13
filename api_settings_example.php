@@ -1,60 +1,52 @@
 <?php
 
 /* ────────────────────────────────────────────────────────────────────────── */
-/*                                   api_settings.php                         */
+/*                           api_settings_example.php                         */
 /* ────────────────────────────────────────────────────────────────────────── */
 /* ──────── Made with ❤️ by darknetzz @ https://github.com/darknetzz ──────── */
 /* ────────────────────────────────────────────────────────────────────────── */
 /*
-    Here you can make customizations to your API.
-    It contains some default values that could be tweaked.
-
-    NOTE: You must rename this file to 'custom_api_settings.php'
-          if you want them to actually apply.
+    # This file should contain custom settings for your API.¨
+    # To activate the settings specified here (overriding the defaults),
+    # rename this file to 'custom_api_settings.php'
 */
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                   General                                  */
-/* ────────────────────────────────────────────────────────────────────────── */
-# Will redirect user to somewhere else than index.php if set to true
-# if there are no parameters given (endpoint, apikey etc.)
-define('ENABLE_CUSTOM_INDEX_NOPARAMS', False);
-define('ENABLE_CUSTOM_INDEX', False);
+try {
 
-# What page should the user be redirected to? Also supports full URLs
-# Example: 'https://example.com/wiki/api'
-define('CUSTOM_INDEX_NOPARAMS', 'custom_index.php');
-define('CUSTOM_INDEX', 'custom_index.php');
+$customs = [
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                                General                                */
+    /* ───────────────────────────────────────────────────────────────────── */
+    "ENABLE_CUSTOM_INDEX"          => False,
+    "ENABLE_CUSTOM_INDEX_NOPARAMS" => False,
+    "CUSTOM_INDEX"                 => "custom_index.php",
+    "CUSTOM_INDEX_NOPARAMS"        => "custom_index.php",
 
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                           HTTP Status codes                           */
+    /* ───────────────────────────────────────────────────────────────────── */
+    "HTTP_STATUS_CODES"            => [
+        "ERROR" => 500,
+        "OK"    => 200,
+    ],
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                              HTTP Status codes                             */
-/* ────────────────────────────────────────────────────────────────────────── */
-define("HTTP_STATUS_CODES", [
-    "ERROR" => 500,
-    "OK" => 200,
-]);
-
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                          Response format defaults                          */
-/* ────────────────────────────────────────────────────────────────────────── */
-define("DEFAULT_FILTER"      , null);
-define("DEFAULT_JSON_COMPACT", false);
-define("VERBOSE_API"         , false); # appends additional information to json response (soon)
-define("NOTIFY_API"          , false); # notifiy API usage on SMS (unless API key has notify == false)
-define("NOTIFY_NUMBER"       , "12345678");
-define("LOG_ENABLE"          , true);       # whether or not to enable logging API requests to a file
-define("LOG_FILE"            , 'api.log');  # file to write to (if LOG_ENABLE !== false)
-define("LOG_LEVEL"           , 'info');     # see below
-define("LOG_LEVELS"          ,  
-    [
+    /* ────────────────────────────────────────────────────────────────────────── */
+    /*                          Response format defaults                          */
+    /* ────────────────────────────────────────────────────────────────────────── */
+    "DEFAULT_FILTER"       => null,
+    "DEFAULT_JSON_COMPACT" => False,
+    "VERBOSE_API"          => False,
+    "NOTIFY_API"           => False,
+    "NOTIFY_NUMBER"        => "12345678",
+    "LOG_ENABLE"           => True,
+    "LOG_FILE"             => 'api.log',
+    "LOG_LEVEL"            => 'info',
+    "LOG_LEVELS"           => [
         'WARNING' => 10,
         'INFO'    => 20,
         'VERBOSE' => 30,
-    ]);
-
-define("GLOBAL_PARAMS",
-        [
+    ],
+    "GLOBAL_PARAMS"        => [
             "apikey",
             "endpoint",
             "filter",
@@ -62,68 +54,81 @@ define("GLOBAL_PARAMS",
             "clean",
             "compact",
             "verbose",
-        ]
-);
+    ],
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*       VALID_FILTERS: Specifies available filters (for all endpoints)       */
-/* ────────────────────────────────────────────────────────────────────────── */
-define("VALID_FILTERS",
-    [
+    /* ────────────────────────────────────────────────────────────────────────── */
+    /*       VALID_FILTERS: Specifies available filters (for all endpoints)       */
+    /* ────────────────────────────────────────────────────────────────────────── */
+    "VALID_FILTERS"        => [
         "httpCode",
         "data",
         "status",
-    ]
-);
+    ],
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*         WHITELIST_MODE:                                                    */
-/*           [TRUE] / Whitelist mode (default): will protect all endpoints    */
-/*            except the ones defined in OPEN_ENDPOINTS                       */
-/* ────────────────────────────────────────────────────────────────────────── */
-/*           [FALSE] / Blacklist mode (not recommended):                      */
-/*           will only consider the PROTECTED_ENDPOINT list,                  */
-/*           everything else will be open                                     */
-/* ────────────────────────────────────────────────────────────────────────── */
-define("WHITELIST_MODE", true);
+    /* ────────────────────────────────────────────────────────────────────────── */
+    /*         WHITELIST_MODE:                                                    */
+    /*           [TRUE] / Whitelist mode (default): will protect all endpoints    */
+    /*            except the ones defined in OPEN_ENDPOINTS                       */
+    /* ────────────────────────────────────────────────────────────────────────── */
+    /*           [FALSE] / Blacklist mode (not recommended):                      */
+    /*           will only consider the PROTECTED_ENDPOINT list,                  */
+    /*           everything else will be open                                     */
+    /* ────────────────────────────────────────────────────────────────────────── */
+    "WHITELIST_MODE" => True,
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/* OPEN_ENDPOINTS: Specifies endpoints that do not require authorization.     */
-/*       Be careful with this as you are potentially exposing yourself.       */
-/* ────────────────────────────────────────────────────────────────────────── */
-define("OPEN_ENDPOINTS",
-    [
+    /* ────────────────────────────────────────────────────────────────────────── */
+    /* OPEN_ENDPOINTS: Specifies endpoints that do not require authorization.     */
+    /*       Be careful with this as you are potentially exposing yourself.       */
+    /* ────────────────────────────────────────────────────────────────────────── */
+    "OPEN_ENDPOINTS" => [
         "api_some_open_endpoint",
         "api_another_open_endpoint",
-    ]
-);
+    ],
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                 Time stuff                                 */
-/* ────────────────────────────────────────────────────────────────────────── */
-$now                     = round(microtime(true));
-define("NOW"             , $now);
-define("LAST_CALLED_JSON", "endpoints_lastcalled.json");
-define("COOLDOWN_TIME"   , 2);
-define("SLEEP_TIME"      , 1);
+    /* ────────────────────────────────────────────────────────────────────────── */
+    /* PROTECTED_ENDPOINTS: Specifies endpoints that requires authorization,      */
+    /* This only applies if <SOME OTHER CONSTANT> is set to blacklist mode.       */
+    /* ────────────────────────────────────────────────────────────────────────── */
+    "PROTECTED_ENDPOINTS"  => [
+        "api_some_open_endpoint",
+        "api_another_open_endpoint",
+    ],
+
+    /* ────────────────────────────────────────────────────────────────────────── */
+    /*                                 Time stuff                                 */
+    /* ────────────────────────────────────────────────────────────────────────── */
+    "NOW"                    => round(microtime(True)),
+    "LAST_CALLED_JSON"       => "endpoints_lastcalled.json",
+    "COOLDOWN_TIME"          => 1,
+    "SLEEP_TIME"             => 2,
 
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                           API Key default options                          */
-/* ────────────────────────────────────────────────────────────────────────── */
-define("APIKEY_DEFAULT_OPTIONS", [
-    "allowedEndpoints"    => ["*"],         # allowed endpoints ("*" = all endpoints)
-    "disallowedEndpoints" => [],            # forbid this key from an endpoint (will override allowedEndpoints)
-    "noTimeOut"           => false,         # allows this key to make unlimited requests with no cooldown
-    "cooldown"            => COOLDOWN_TIME, # default cooldown time
-    "sleep"               => SLEEP_TIME,    # default time to sleep before response
-    "notify"              => false,         # will notify you if you have set up SMS config
-    "log_write"           => true,          # enables write_log function where possible if LOG_ENABLE !== false
-]);
+    /* ────────────────────────────────────────────────────────────────────────── */
+    /*                           API Key default options                          */
+    /* ────────────────────────────────────────────────────────────────────────── */
+    "APIKEY_DEFAULT_OPTIONS" => [
+        "allowedEndpoints"    => ["*"],         # allowed endpoints ("*" = all endpoints)
+        "disallowedEndpoints" => [],            # forbid this key from an endpoint (will override allowedEndpoints)
+        "noTimeOut"           => False,         # allows this key to make unlimited requests with no cooldown
+        "cooldown"            => 1,             # default cooldown time
+        "sleep"               => 2,             # default time to sleep before response
+        "notify"              => False,         # will notify you if you have set up SMS config
+        "log_write"           => True,          # enables write_log function where possible if LOG_ENABLE !== False
+    ],
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                            Funny error messages                            */
-/* ────────────────────────────────────────────────────────────────────────── */
-define("FUNNY_RESPONSES_ENABLE", true);
+    /* ────────────────────────────────────────────────────────────────────────── */
+    /*                            Funny error messages                            */
+    /* ────────────────────────────────────────────────────────────────────────── */
+    "FUNNY_RESPONSES_ENABLE" => True,
+];
 
+foreach ($customs as $const => $val) {
+    if (!defined($const)) {
+        define($const, $val);
+    }
+}
+
+} catch (Exception $e) {
+    die("Error loading default settings: ".$e->getMessage());
+}
 ?>
