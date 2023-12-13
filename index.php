@@ -14,9 +14,7 @@ header('Access-Control-Allow-Origin: *;');
 # this needs to be done here because we allow custom a index
 # Check for custom settings file first, then include api_settings.php regardless
 # as it will set defaults if it's not defined by custom_settings.
-foreach (glob("settings/*.php") as $filename) {
-    require_once($filename);
-}
+
 require_once('api_settings.php');
 /* ───────────────────────────────────────────────────────────────────── */
 
