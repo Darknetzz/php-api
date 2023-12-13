@@ -7,7 +7,7 @@
 /* ────────────────────────────────────────────────────────────────────────── */
 /*
     # This file should contain custom settings for your API.¨
-    # To activate the settings specified here (overriding the defaults),
+    # NOTE: To activate the settings specified here (overriding the defaults),
     # rename this file to 'custom_api_settings.php'
 */
 
