@@ -10,7 +10,7 @@
     # and it should be applied if the constants are not defined, which could cause an error.
 */
 
-
+try {
 
 $defaults = [
     /* ───────────────────────────────────────────────────────────────────── */
@@ -109,8 +109,8 @@ $defaults = [
         "allowedEndpoints"    => ["*"],         # allowed endpoints ("*" = all endpoints)
         "disallowedEndpoints" => [],            # forbid this key from an endpoint (will override allowedEndpoints)
         "noTimeOut"           => False,         # allows this key to make unlimited requests with no cooldown
-        "cooldown"            => COOLDOWN_TIME, # default cooldown time
-        "sleep"               => SLEEP_TIME,    # default time to sleep before response
+        "cooldown"            => 1,             # default cooldown time
+        "sleep"               => 2,             # default time to sleep before response
         "notify"              => False,         # will notify you if you have set up SMS config
         "log_write"           => True,          # enables write_log function where possible if LOG_ENABLE !== False
     ],
@@ -125,5 +125,9 @@ foreach ($defaults as $const => $val) {
     if (!defined($const)) {
         define($const, $val);
     }
+}
+
+} catch (Exception $e) {
+    die("Error loading default settings: ".$e->getMessage());
 }
 ?>

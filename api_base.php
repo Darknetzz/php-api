@@ -26,7 +26,6 @@ function err(string $text, int $statusCode = 500, bool $fatal = true) {
             "data" => $text,
         ]
     );
-    die(); # just gotta make sure we are not continuing
 }
 
 

@@ -18,5 +18,9 @@
 /*    All we have to do here is include it, it will define               */
 /*    constants that aren't already  defined by a custom settings file.  */
 /* ───────────────────────────────────────────────────────────────────── */
+if (!file_exists("api_defaults.php")) {
+    die("api_defaults.php not found.");
+}
+
 include_once("api_defaults.php");
 ?>
