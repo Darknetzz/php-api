@@ -22,7 +22,7 @@ if (defined('API_KEYS')) {
 do {
     # Check if keys folder contains custom configuration files.
     $keys_files = glob("keys/*.php");   # Get all files in the keys folder.
-    $count          = count($keys_files);   # Count the number of files in the keys folder.
+    $count      = count($keys_files);   # Count the number of files in the keys folder.
 
     if (empty($keys_files)) {
         die("No keys files found in keys folder.");
@@ -35,17 +35,16 @@ do {
     
     if ($count == $count_excludes) {
         require_once("keys/my_custom_keys.php");
-        break;
-    }
-    
-    if ($count > $count_excludes) {
+    } elseif ($count > $count_excludes) {
         foreach (glob("keys/*.php") as $file) {
             if (!in_array($file, $excludes)) {
                 require_once($file);
             }
         }
-        break;
     }
+
+    define('API_KEYS', $apikeys);
+    break;
 
     die("Something went wrong while loading keys files.");
     
