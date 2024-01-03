@@ -99,7 +99,7 @@ try {
         "NOW"                    => round(microtime(True)),
         "LAST_CALLED_JSON"       => "endpoints_lastcalled.json",
         "COOLDOWN_TIME"          => 1,
-        "SLEEP_TIME"             => 2,
+        "SLEEP_TIME"             => 1,
 
 
         /* ────────────────────────────────────────────────────────────────────────── */
@@ -110,7 +110,7 @@ try {
             "disallowedEndpoints" => [],            # forbid this key from an endpoint (will override allowedEndpoints)
             "noTimeOut"           => False,         # allows this key to make unlimited requests with no cooldown
             "cooldown"            => 1,             # default cooldown time
-            "sleep"               => 2,             # default time to sleep before response
+            "sleep"               => 1,             # default time to sleep before response
             "notify"              => False,         # will notify you if you have set up SMS config
             "log_write"           => True,          # enables write_log function where possible if LOG_ENABLE !== False
         ],
