@@ -36,17 +36,16 @@ do {
     
     if ($count == $count_excludes) {
         require_once("keys/my_custom_keys.php");
-        break;
-    }
-    
-    if ($count > $count_excludes) {
+    } elseif ($count > $count_excludes) {
         foreach (glob("keys/*.php") as $file) {
             if (!in_array($file, $excludes)) {
                 require_once($file);
             }
         }
-        break;
     }
+
+    define('API_KEYS', $apikeys);
+    break;
 
     die("Something went wrong while loading keys files.");
     

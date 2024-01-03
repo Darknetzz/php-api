@@ -42,7 +42,6 @@ do {
         break;
     }
 
-    die("Something went wrong while loading endpoints files.");
-    
+    die("Something went wrong while loading aliases files.");
 } while (False);
 ?>
