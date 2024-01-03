@@ -15,8 +15,9 @@
 
 do {
     # Check if endpoints folder contains custom configuration files.
-    $endpoints_files = glob("endpoints/*.php");   # Get all files in the endpoints folder.
-    $count          = count($endpoints_files);   # Count the number of files in the endpoints folder.
+    $endpoints_folder   = dirname(__FILE__) . '/endpoints';  # Relative path to endpoints folder.
+    $endpoints_files    = glob("$endpoints_folder/*.php");   # Get all files in the endpoints folder.
+    $count              = count($endpoints_files);           # Count the number of files in the endpoints folder.
 
     if (empty($endpoints_files)) {
         die("No endpoints files found in endpoints folder.");

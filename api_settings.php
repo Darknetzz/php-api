@@ -15,8 +15,9 @@
 
 do {
     # Check if settings folder contains custom configuration files.
-    $settings_files = glob("settings/*.php");   # Get all files in the settings folder.
-    $count          = count($settings_files);   # Count the number of files in the settings folder.
+    $settings_folder    = dirname(__FILE__) . '/settings';  # Relative path to settings folder.
+    $settings_files     = glob("$settings_folder/*.php");   # Get all files in the settings folder.
+    $count              = count($settings_files);           # Count the number of files in the settings folder.
 
     if (empty($settings_files)) {
         die("No settings files found in settings folder.");

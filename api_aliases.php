@@ -1,46 +1,40 @@
 <?php
+
 /* ────────────────────────────────────────────────────────────────────────── */
-/*                                   api_keys.php                             */
+/*                                   api_aliases.php                           */
 /* ────────────────────────────────────────────────────────────────────────── */
 /* ──────── Made with ❤️ by darknetzz @ https://github.com/darknetzz ──────── */
 /* ────────────────────────────────────────────────────────────────────────── */
 /*
-    # This file should contain the default values for everything in keys -
+    # This file should contain the default values for everything in aliases -
     # and it should be applied if the constants are not defined, which could cause an error.
 
     # NOTE: Please do not change this file directly, change the values in
-    #       the 'keys' folder instead.
+    #       the 'aliases' folder instead.
 */
 
-if (defined('API_KEYS')) {
-    die("
-        API_KEYS is already defined. Please check your settings.
-        It should NOT be defined in any of the files under your 'settings' folder, only in api_keys.php.
-    ");
-}
-
 do {
-    # Check if keys folder contains custom configuration files.
-    $keys_folder    = dirname(__FILE__) . '/keys'; # Relative path to keys folder.
-    $keys_files     = glob("$keys_folder/*.php");  # Get all files in the keys folder.
-    $count          = count($keys_files);          # Count the number of files in the keys folder.
+    # Check if aliases folder contains custom configuration files.
+    $aliases_folder   = dirname(__FILE__) . '/aliases';  # Relative path to aliases folder.
+    $aliases_files    = glob("$aliases_folder/*.php");   # Get all files in the aliases folder.
+    $count            = count($aliases_files);           # Count the number of files in the aliases folder.
 
-    if (empty($keys_files)) {
-        die("No keys files found in keys folder.");
+    if (empty($aliases_files)) {
+        die("No aliases files found in aliases folder.");
     }
 
     $excludes = [
-        "keys/my_custom_keys.php",
+        "aliases/my_custom_aliases.php",
     ];
     $count_excludes = count($excludes);
     
     if ($count == $count_excludes) {
-        require_once("keys/my_custom_keys.php");
+        require_once("aliases/my_custom_aliases.php");
         break;
     }
     
     if ($count > $count_excludes) {
-        foreach (glob("keys/*.php") as $file) {
+        foreach (glob("aliases/*.php") as $file) {
             if (!in_array($file, $excludes)) {
                 require_once($file);
             }
@@ -48,7 +42,7 @@ do {
         break;
     }
 
-    die("Something went wrong while loading keys files.");
+    die("Something went wrong while loading endpoints files.");
     
 } while (False);
 ?>
