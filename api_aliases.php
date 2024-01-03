@@ -24,17 +24,17 @@ do {
     }
 
     $excludes = [
-        $aliases_folder."my_custom_aliases.php",
+        $aliases_folder."/my_custom_aliases.php",
     ];
     $count_excludes = count($excludes);
     
     if ($count == $count_excludes) {
-        require_once($aliases_folder."my_custom_aliases.php");
+        require_once($aliases_folder."/my_custom_aliases.php");
         break;
     }
     
     if ($count > $count_excludes) {
-        foreach (glob($aliases_folder."*.php") as $file) {
+        foreach (glob($aliases_folder."/*.php") as $file) {
             if (!in_array($file, $excludes)) {
                 require_once($file);
             }
