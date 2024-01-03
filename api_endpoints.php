@@ -24,17 +24,17 @@ do {
     }
 
     $excludes = [
-        "endpoints/my_custom_endpoints.php",
+        $endpoints_folder."/my_custom_endpoints.php",
     ];
     $count_excludes = count($excludes);
     
     if ($count == $count_excludes) {
-        require_once("endpoints/my_custom_endpoints.php");
+        require_once($endpoints_folder."/my_custom_endpoints.php");
         break;
     }
     
     if ($count > $count_excludes) {
-        foreach (glob("endpoints/*.php") as $file) {
+        foreach (glob($endpoints_folder."/*.php") as $file) {
             if (!in_array($file, $excludes)) {
                 require_once($file);
             }

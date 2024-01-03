@@ -30,18 +30,22 @@ do {
     }
 
     $excludes = [
-        "keys/my_custom_keys.php",
+        $keys_folder."/my_custom_keys.php",
     ];
     $count_excludes = count($excludes);
     
     if ($count == $count_excludes) {
-        require_once("keys/my_custom_keys.php");
+        require_once($keys_folder."/my_custom_keys.php");
     } elseif ($count > $count_excludes) {
-        foreach (glob("keys/*.php") as $file) {
+        foreach (glob($keys_folder."/*.php") as $file) {
             if (!in_array($file, $excludes)) {
                 require_once($file);
             }
         }
+    }
+
+    if (!isset($apikeys) || empty($apikeys)) {
+        die("Variable \$apikeys not set. Please check your settings (or more specifically your keys folder).");
     }
 
     define('API_KEYS', $apikeys);

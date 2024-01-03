@@ -24,17 +24,17 @@ do {
     }
 
     $excludes       = [
-        "settings/default_settings.php",
-        "settings/custom_api_settings.php",
+        $settings_folder."/default_settings.php",
+        $settings_folder."/custom_api_settings.php",
     ];
     
     if ($count == 2) {
-        require_once("settings/default_settings.php");
+        require_once($settings_folder."/default_settings.php");
         break;
     }
     
     if ($count > 2) {
-        foreach (glob("settings/*.php") as $file) {
+        foreach (glob($settings_folder."/*.php") as $file) {
             if (!in_array($file, $excludes)) {
                 require_once($file);
             }
