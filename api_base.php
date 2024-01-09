@@ -518,7 +518,7 @@ function callFunction(string $func, array $params = []) {
             // return err("The endpoint '$func' was called a mere ".$secondsSinceLastCalled." seconds ago! Please wait another ".(COOLDOWN_TIME - $secondsSinceLastCalled)." seconds.");
         }
 
-        $functionCall = $functionObject->invoke(...$paramsClean);
+        $functionCall = $functionObject->invokeArgs($paramsClean);
         updateLastCalled($func, $valid_apikey);
 
         if (!$functionCall) {
