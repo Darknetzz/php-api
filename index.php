@@ -40,8 +40,6 @@ require_once('api_endpoints.php');
 require_once('api_keys.php');
 require_once('api_aliases.php');
 
-header('Content-type: application/json;'); 
-
 # The endpoint should always be provided in GET
 # EDIT 2023-11-06: does it really?
 if (!var_assert($_REQUEST['endpoint'])) {
