@@ -28,19 +28,16 @@ do {
         $settings_folder."/custom_api_settings.php",
     ];
     
-    if ($count == 2) {
-        require_once($settings_folder."/default_settings.php");
-        break;
-    }
-    
     if ($count > 2) {
         foreach (glob($settings_folder."/*.php") as $file) {
             if (!in_array($file, $excludes)) {
                 require_once($file);
             }
         }
-        break;
     }
+
+    # Include defaults regardless, as it will only set the undefined settings
+    require_once($settings_folder."/default_settings.php");
 
     die("Something went wrong while loading settings files.");
     
