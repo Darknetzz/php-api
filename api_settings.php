@@ -39,7 +39,5 @@ do {
     # Include defaults regardless, as it will only set the undefined settings
     require_once($settings_folder."/default_settings.php");
 
-    die("Something went wrong while loading settings files.");
-    
 } while (False);
 ?>
