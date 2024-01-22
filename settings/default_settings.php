@@ -97,6 +97,7 @@ try {
         /*                                 Time stuff                                 */
         /* ────────────────────────────────────────────────────────────────────────── */
         "NOW"                    => round(microtime(True)),
+        "NOW_MICROSECONDS"       => microtime(True) * 1000,
         "LAST_CALLED_JSON"       => "endpoints_lastcalled.json",
         "COOLDOWN_TIME"          => 1,
         "SLEEP_TIME"             => 1,
