@@ -422,7 +422,13 @@ function callFunction(string $func, array $params = []) {
             }
 
             # API key was provided
-            $apikey = $params['apikey'];
+            $apikey = null;
+            foreach (['apikey', 'api_key', 'key'] as $candidate) {
+                if (isset($params[$candidate]) && $params[$candidate] !== '') {
+                    $apikey = $params[$candidate];
+                    break;
+                }
+            }
             $valid_apikey = apikey_validate($apikey);
 
             # Invalid API key
