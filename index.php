@@ -5,8 +5,7 @@
 /* ──────── Made with ❤️ by darknetzz @ https://github.com/darknetzz ──────── */
 /* ────────────────────────────────────────────────────────────────────────── */
 
-header('Content-type: application/json;');
-header('Access-Control-Allow-Origin: *;');
+
 
 /* ───────────────────────────────────────────────────────────────────── */
 /*                         Require settings file                         */
@@ -43,8 +42,17 @@ require_once('api_aliases.php');
 # The endpoint should always be provided in GET
 # EDIT 2023-11-06: does it really?
 if (!var_assert($_REQUEST['endpoint'])) {
+    if (file_exists("api_gui.php")) {
+        // If the api_gui.php exists, we can use it as a fallback.
+        // This is useful for development and testing purposes.
+        header('Location: api_gui.php');
+        die();
+    }
     die(err("No endpoint provided.", 404));
 }
+
+header('Content-type: application/json;');
+header('Access-Control-Allow-Origin: *;');
 $endpoint = "api_".$_REQUEST['endpoint'];
 
 # Apart from that we don't wish to extinguish between request methods (for now), unless unspecified.
