@@ -66,17 +66,17 @@ All you need to do now is configure it to your likings, in order to do this, you
 ### 📄 File summary
 | File/Folder                              | Description                                                                                                      |
 | :--------------------------------------- | :--------------------------------------------------------------------------------------------------------------- |
-| [settings/](#settings)                   | Folder containing settings files. Edit `my_custom_settings.php` to customize your API settings.                 |
-| [keys/](#keys)                           | Folder containing API keys. Add your keys in `my_custom_keys.php`. Pro tip: [Use a generator!](https://roste.org/rand/#rsgen) |
-| [endpoints/](#endpoints)                 | Folder containing endpoint definitions. Create your endpoints in `my_custom_endpoints.php` or separate files.   |
-| [aliases/](#aliases)                     | Folder containing endpoint aliases. Define aliases in `my_custom_aliases.php` or separate files.                |
-| [api_base.php](#base)                    | The most fundamental functions. Don't change this file unless you know what you are doing.                       |
+| [settings/](#-settings)                  | Folder containing settings files. Edit `my_custom_settings.php` to customize your API settings.                 |
+| [keys/](#-keys)                          | Folder containing API keys. Add your keys in `my_custom_keys.php`. Pro tip: [Use a generator!](https://roste.org/rand/#rsgen) |
+| [endpoints/](#-endpoints)                | Folder containing endpoint definitions. Create your endpoints in `my_custom_endpoints.php` or separate files.   |
+| [aliases/](#-endpoint-aliases)           | Folder containing endpoint aliases. Define aliases in `my_custom_aliases.php` or separate files.                |
+| [api_base.php](#-base)                   | The most fundamental functions. Don't change this file unless you know what you are doing.                       |
 
 
 
 <!-- ──────────────────────────── API Settings ───────────────────────────── -->
 ### 🪛 Settings
-[`settings/`](#settings)
+[`settings/`](#-settings)
 
 This is where most of the actual configuration is done.
 
@@ -126,7 +126,7 @@ $customs = [
 
 <!-- ────────────────────────────── API Keys ─────────────────────────────── -->
 ### 🔑 Keys
-[`keys/`](#keys)
+[`keys/`](#-keys)
 
 > :warning: **Warning**: Please do not reuse API keys found anywhere! Generate your own keys at [roste.org](https://roste.org/rand/#rsgen).
 
@@ -164,7 +164,7 @@ addAPIKey(
 <!--                              API ENDPOINTS                              -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 ### 💬 Endpoints
-[`endpoints/`](#endpoints)
+[`endpoints/`](#-endpoints)
 
 To create an endpoint that you can talk to, open up the file `endpoints/my_custom_endpoints.php`.
 
@@ -256,7 +256,7 @@ Here are some example endpoints you can configure:
 <!--                          API Endpoint Aliases                           -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 ### 🟰 Endpoint Aliases
-[`aliases/`](#aliases)
+[`aliases/`](#-endpoint-aliases)
 
 Here you can put your aliases in the `aliases/my_custom_aliases.php` file, or create additional files in the `aliases/` folder. All PHP files in this folder will be automatically loaded.
 
@@ -277,7 +277,7 @@ These aliases will work for both "internal"/"base" functions and endpoints.
 <!--                                API Base                                 -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 ### 🧱 Base
-[`api_base.php`](#api_base)
+[`api_base.php`](#-base)
 
 This file is the fundament for this API. You should not have to edit this file to customize the API sufficiently.
 But if you must, here are the functions and their purpose:
