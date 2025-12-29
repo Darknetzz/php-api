@@ -92,6 +92,7 @@ $customs = [
     "LOG_ENABLE"   => true,
     "LOG_LEVEL"    => "verbose",
     "VERBOSE_API"  => false,
+    # Add more custom settings here
 ];
 ```
 
@@ -154,7 +155,7 @@ addAPIKey(
 | `array` | `allowedEndpoints`    | `["*"]`         | Endpoints this key has access to. If there is a * in the array the key will be unrestricted.            |
 | `array` | `disallowedEndpoints` | `[]`            | Endpoints this key specifically doesn't have access to, will override allowedEndpoints                  |
 | `bool`  | `noTimeOut`           | `false`         | Specify if this key can bypass the timeout                                                              |
-| `int`   | `timeout`             | `COOLDOWN_TIME` | Time in seconds this key has to wait between API calls (COOLDOWN_TIME is specified in settings folder) |
+| `int`   | `timeout`             | `COOLDOWN_TIME` | Time in seconds this key has to wait between API calls (COOLDOWN_TIME is defined in settings/default_settings.php) |
 | `bool`  | `notify`              | `true`          | Whether or not to notify the owner of this API when an endpoint is used.                                |
 | `bool`  | `log_write`           | `true`          | Whether or not to write requests with this API key to a log file of your choosing.                      |
 
