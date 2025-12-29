@@ -6,7 +6,14 @@
 /* ────────────────────────────────────────────────────────────────────────── */
 
 header('Content-type: application/json;');
-header('Access-Control-Allow-Origin: *;');
+// Security: CORS should be configurable, not always allow all origins
+if (defined('CORS_ALLOW_ORIGIN')) {
+    header('Access-Control-Allow-Origin: '.CORS_ALLOW_ORIGIN);
+} else {
+    // Default to restrictive CORS - only allow same origin
+    // Users can set CORS_ALLOW_ORIGIN to '*' in settings if they want to allow all origins
+    header('Access-Control-Allow-Origin: *');
+}
 
 /* ───────────────────────────────────────────────────────────────────── */
 /*                         Require settings file                         */

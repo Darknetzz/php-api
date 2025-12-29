@@ -39,6 +39,12 @@ try {
         // PRODUCTION_MODE: When enabled, reduces information disclosure in error messages
         // Set to true in production environments to avoid exposing internal details
         "PRODUCTION_MODE"              => False,
+        
+        // CORS_ALLOW_ORIGIN: Configure Cross-Origin Resource Sharing
+        // Set to '*' to allow all origins (less secure but more permissive)
+        // Set to specific domain like 'https://example.com' for restricted access
+        // Default is '*' for backward compatibility
+        "CORS_ALLOW_ORIGIN"            => "*",
 
         /* ───────────────────────────────────────────────────────────────────── */
         /*                           HTTP Status codes                           */

@@ -174,6 +174,9 @@ function log_write($txt, $level = 'info') {
                 $currLine++;
                 $remainder++;
             }
+            
+            // Reconstruct log from remaining lines
+            $currLog = implode('', $lines);
 
             // $fh      = fopen($log_file, 'w+');
             // $currLog = fread($fh);
@@ -188,7 +191,11 @@ function log_write($txt, $level = 'info') {
             // }
         }
 
-        $writeLog = $currLog.$prefix.$txt."\n";
+        // Security: Sanitize log message to prevent log injection attacks
+        // Remove newlines and other control characters that could be used to forge log entries
+        $sanitized_txt = str_replace(["\n", "\r", "\0"], ' ', $txt);
+        
+        $writeLog = $currLog.$prefix.$sanitized_txt."\n";
 
         $fh = fopen($log_file, 'w+');
         // Security: Use flock to prevent race conditions
@@ -585,8 +592,26 @@ function secondsSinceLastCalled($function_name, $valid_apikey = null) {
             touch(LAST_CALLED_JSON);
         }
 
-        $json_contents = file_get_contents(LAST_CALLED_JSON);
+        // Security: Add file locking for reading to prevent race conditions
+        $fh = fopen(LAST_CALLED_JSON, 'r');
+        if (!$fh) {
+            die(err("Unable to open last called file for reading"));
+        }
+        
+        if (flock($fh, LOCK_SH)) {
+            $json_contents = stream_get_contents($fh);
+            flock($fh, LOCK_UN);
+        } else {
+            fclose($fh);
+            die(err("Unable to acquire lock on last called file"));
+        }
+        fclose($fh);
+        
+        // Security: Validate JSON decode
         $lf = json_decode($json_contents, true);
+        if ($json_contents !== '' && $lf === null && json_last_error() !== JSON_ERROR_NONE) {
+            die(err("Invalid JSON in last called file"));
+        }
         
         # This endpoint is open
         if (endpoint_open($function_name) || $valid_apikey == null) {
@@ -625,14 +650,31 @@ function updateLastCalled($function_name, $valid_apikey = null) {
             touch(LAST_CALLED_JSON);
         }
 
-        $json_contents = file_get_contents(LAST_CALLED_JSON);
+        // Security: Read with shared lock
+        $fh_read = fopen(LAST_CALLED_JSON, 'r');
+        if (!$fh_read) {
+            die(err("Unable to open last called file for reading"));
+        }
+        
+        if (flock($fh_read, LOCK_SH)) {
+            $json_contents = stream_get_contents($fh_read);
+            flock($fh_read, LOCK_UN);
+        } else {
+            fclose($fh_read);
+            die(err("Unable to acquire lock on last called file"));
+        }
+        fclose($fh_read);
 
         # Create empty array if file empty
         if (empty($json_contents)) {
             $json_contents = "";
             $lf            = [];
         } else {
-            $lf  = json_decode($json_contents, true);
+            // Security: Validate JSON decode
+            $lf = json_decode($json_contents, true);
+            if ($lf === null && json_last_error() !== JSON_ERROR_NONE) {
+                die(err("Invalid JSON in last called file"));
+            }
         }
 
         # If function array doesn't exists in JSON file, create it
@@ -675,7 +717,8 @@ function in_md_array($name, $id, $array = API_KEYS) {
         die(err("The API_KEYS constant isn't a valid array."));
     }
     foreach ($array as $key => $val) {
-        if ($val[$name] == $id) {
+        // Security: Use hash_equals for constant-time comparison to prevent timing attacks
+        if (isset($val[$name]) && hash_equals((string)$val[$name], (string)$id)) {
             return $key;
         }
     }
