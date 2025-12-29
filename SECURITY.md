@@ -96,7 +96,7 @@ This document outlines the security measures implemented in this PHP API and bes
 ### Required Settings for Production
 
 ```php
-// In settings/my_custom_settings.php or api_settings.php
+// In settings/my_custom_settings.php
 
 const PRODUCTION_MODE = true;           // Reduce information disclosure
 const TRUST_PROXY = false;              // Only enable if behind trusted proxy
@@ -122,7 +122,6 @@ const LOG_ENABLE = true;                // Enable logging for security monitorin
 ### 2. File Permissions
 ```bash
 # Recommended permissions
-chmod 640 api_keys.php
 chmod 640 keys/*.php
 chmod 640 settings/*.php
 chmod 660 api.log
@@ -134,10 +133,13 @@ chmod 660 endpoints_lastcalled.json
 **Apache** (.htaccess):
 ```apache
 # Protect sensitive files
-<FilesMatch "^(api_keys|\.git|composer\.(json|lock)|\.env)">
+<FilesMatch "^(\.git|composer\.(json|lock)|\.env)">
     Order allow,deny
     Deny from all
 </FilesMatch>
+
+# Protect directories with sensitive data
+RedirectMatch 404 ^/(keys|settings|aliases|endpoints)/
 
 # Disable directory listing
 Options -Indexes
@@ -145,8 +147,8 @@ Options -Indexes
 
 **Nginx**:
 ```nginx
-# Protect sensitive files
-location ~ ^/(api_keys\.php|keys/|\.git|composer\.(json|lock)|\.env) {
+# Protect sensitive files and directories
+location ~ ^/(keys|settings|aliases|endpoints|\.git|composer\.(json|lock)|\.env) {
     deny all;
     return 404;
 }
