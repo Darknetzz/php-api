@@ -27,6 +27,18 @@ try {
         "ENABLE_CUSTOM_INDEX_NOPARAMS" => False,
         "CUSTOM_INDEX"                 => "custom_index.php",
         "CUSTOM_INDEX_NOPARAMS"        => "custom_index.php",
+        
+        /* ───────────────────────────────────────────────────────────────────── */
+        /*                           Security Settings                           */
+        /* ───────────────────────────────────────────────────────────────────── */
+        // TRUST_PROXY: Whether to trust X-Forwarded-For headers for IP detection
+        // Only enable this if you're behind a trusted reverse proxy (nginx, Apache, etc.)
+        // When false, only REMOTE_ADDR is used (more secure, harder to spoof)
+        "TRUST_PROXY"                  => False,
+        
+        // PRODUCTION_MODE: When enabled, reduces information disclosure in error messages
+        // Set to true in production environments to avoid exposing internal details
+        "PRODUCTION_MODE"              => False,
 
         /* ───────────────────────────────────────────────────────────────────── */
         /*                           HTTP Status codes                           */

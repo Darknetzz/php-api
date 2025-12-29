@@ -25,7 +25,12 @@ if (defined('ENABLE_CUSTOM_INDEX_NOPARAMS')
     && defined('CUSTOM_INDEX_NOPARAMS')
     && empty($_REQUEST) 
     && basename(__FILE__) !== basename(CUSTOM_INDEX_NOPARAMS)) {
-    header('Location: '.CUSTOM_INDEX_NOPARAMS);
+    // Security: Validate redirect URL to prevent open redirect
+    $redirect = CUSTOM_INDEX_NOPARAMS;
+    if (!preg_match('/^[a-zA-Z0-9_\-\.\/]+\.php$/', $redirect) || strpos($redirect, '..') !== false) {
+        die(err("Invalid custom index configuration", 500));
+    }
+    header('Location: '.htmlspecialchars($redirect, ENT_QUOTES, 'UTF-8'));
     // die(); # the header should redirect us, but make sure we stop running here.
 }
 
@@ -34,7 +39,12 @@ if (defined('ENABLE_CUSTOM_INDEX')
     && defined('CUSTOM_INDEX')
     && !empty($_REQUEST)
     && basename(__FILE__) !== basename(CUSTOM_INDEX)) {
-    header('Location: '.CUSTOM_INDEX."?".http_build_query($_REQUEST));
+    // Security: Validate redirect URL to prevent open redirect
+    $redirect = CUSTOM_INDEX;
+    if (!preg_match('/^[a-zA-Z0-9_\-\.\/]+\.php$/', $redirect) || strpos($redirect, '..') !== false) {
+        die(err("Invalid custom index configuration", 500));
+    }
+    header('Location: '.htmlspecialchars($redirect, ENT_QUOTES, 'UTF-8')."?".http_build_query($_REQUEST));
     // die(); # the header should redirect us, but make sure we stop running here.
 }
 
@@ -47,7 +57,14 @@ header('Content-type: application/json;');
 if (!var_assert($_REQUEST['endpoint'])) {
     die(err("No endpoint provided.", 404));
 }
-$endpoint = "api_".$_REQUEST['endpoint'];
+
+// Security: Validate endpoint name to prevent code injection
+$endpoint_input = $_REQUEST['endpoint'];
+if (!preg_match('/^[a-zA-Z0-9_]+$/', $endpoint_input)) {
+    die(err("Invalid endpoint name. Only alphanumeric characters and underscores are allowed.", 400));
+}
+
+$endpoint = "api_".$endpoint_input;
 
 # Apart from that we don't wish to extinguish between request methods (for now), unless unspecified.
 if (empty($_SERVER['REQUEST_METHOD'])) {

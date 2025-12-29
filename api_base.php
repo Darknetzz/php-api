@@ -17,13 +17,22 @@
 /*                                  NOTE: Function err */
 /* ────────────────────────────────────────────────────────────────────────── */
 function err(string $text, int $statusCode = 500, bool $fatal = true) {
+    // Security: Sanitize error messages in production to avoid information disclosure
+    $sanitized_text = $text;
+    if (defined('PRODUCTION_MODE') && PRODUCTION_MODE === true) {
+        // In production, don't expose detailed error messages
+        if ($statusCode >= 500) {
+            $sanitized_text = "Internal server error";
+        }
+    }
+    
     log_write($text, 'verbose');
     http_response_code($statusCode);
     return json_encode(
         [
             "httpCode" => $statusCode,
             "status" => "ERROR",
-            "data" => $text,
+            "data" => htmlspecialchars($sanitized_text, ENT_QUOTES, 'UTF-8'),
         ]
     );
 }
@@ -55,11 +64,22 @@ function var_assert(mixed &$var, mixed $assertVal = false, bool $lazy = false) :
 /*                                 Get user IP                                */
 /* ────────────────────────────────────────────────────────────────────────── */
 function userIP() {
-    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        return $_SERVER['HTTP_X_FORWARDED_FOR'];
-    }
+    // Security: Only trust X-Forwarded-For if from trusted proxy
+    // Default to REMOTE_ADDR which is more reliable and harder to spoof
     if (!empty($_SERVER['REMOTE_ADDR'])) {
-        return $_SERVER['REMOTE_ADDR'];
+        $ip = $_SERVER['REMOTE_ADDR'];
+        
+        // Only use X-Forwarded-For if configured to trust proxies
+        if (defined('TRUST_PROXY') && TRUST_PROXY === true && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            // Validate and sanitize X-Forwarded-For
+            $forwarded = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+            // Basic IP validation
+            if (filter_var($forwarded, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                $ip = $forwarded;
+            }
+        }
+        
+        return $ip;
     }
     die(err("Unable to determine IP"));
 }
@@ -171,7 +191,11 @@ function log_write($txt, $level = 'info') {
         $writeLog = $currLog.$prefix.$txt."\n";
 
         $fh = fopen($log_file, 'w+');
-        fwrite($fh, $writeLog);
+        // Security: Use flock to prevent race conditions
+        if (flock($fh, LOCK_EX)) {
+            fwrite($fh, $writeLog);
+            flock($fh, LOCK_UN);
+        }
         fh_close($fh);
         return;
     } catch(Throwable $t) {
@@ -537,7 +561,17 @@ function callFunction(string $func, array $params = []) {
 
         return api_response(status: "OK", data: ["response" => $functionCall, "verboseInfo" => $verboseInfo]);
     } catch (Throwable $e) {
-        return err("Exception encountered while calling endpoint $func. $e");
+        // Security: Log full exception but return sanitized message
+        $full_error = "Exception encountered while calling endpoint $func. ".$e->getMessage();
+        log_write($full_error, 'verbose');
+        
+        $error_msg = "Exception encountered while calling endpoint $func.";
+        if (defined('PRODUCTION_MODE') && PRODUCTION_MODE === false) {
+            // Only show detailed exception in non-production
+            $error_msg .= " ".$e->getMessage();
+        }
+        
+        return err($error_msg);
     }
 }
 
@@ -619,7 +653,11 @@ function updateLastCalled($function_name, $valid_apikey = null) {
         $lf[$function_name][$valid_apikey] = NOW;
 
         $fh = fopen(LAST_CALLED_JSON, 'w+');
-        fwrite($fh, json_encode($lf));
+        // Security: Use flock to prevent race conditions
+        if (flock($fh, LOCK_EX)) {
+            fwrite($fh, json_encode($lf));
+            flock($fh, LOCK_UN);
+        }
         fh_close($fh);
 
         return true;
