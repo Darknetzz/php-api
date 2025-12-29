@@ -25,6 +25,11 @@ try {
 
         # Folder (will replace Custom)
         $folder = explode("_", $include)[1];
+        
+        // Security: Validate folder name to prevent path traversal
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $folder)) {
+            die("Invalid include folder name: ".htmlspecialchars($folder, ENT_QUOTES, 'UTF-8'));
+        }
 
         # Custom (will replace Default)
         $custom = 'custom_'.$include.'.php';
@@ -35,7 +40,12 @@ try {
         # Directory with this prefix will be included
         if (is_dir($folder)) {
             foreach (glob($folder."/*.php") as $file) {
-                require_once($file);
+                // Security: Verify the file is actually in the expected directory
+                $realFolder = realpath($folder);
+                $realFile = realpath($file);
+                if ($realFile && $realFolder && strpos($realFile, $realFolder) === 0) {
+                    require_once($file);
+                }
             }
             # We don't continue here because we want to include the custom file if it exists as well
             # Actually, we might want to...
