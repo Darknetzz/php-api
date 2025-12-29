@@ -64,23 +64,38 @@ All you need to do now is configure it to your likings, in order to do this, you
 
 <!-- ──────────────────────────── File summary ───────────────────────────── -->
 ### 📄 File summary
-| File                                     | Description                                                                                                      |
+| File/Folder                              | Description                                                                                                      |
 | :--------------------------------------- | :--------------------------------------------------------------------------------------------------------------- |
-| [api_settings.php](#api-settings)        | You can change some default settings here.                                                                       |
-| [api_defaults.php](#api-defaults)        | This file contains all the default settings, should not be edited. Create your own custom settings file instead. |
-| [api_keys.php](#api-keys)                | Put your securely generated API keys here. Pro tip: [Use a generator!](https://roste.org/rand/#rsgen)            |
-| [api_endpoints.php](#api-endpoints)      | This is where you specify your endpoints.                                                                        |
-| [api_aliases.php](#api-endpoint-aliases) | This is where you specify aliases for your endpoints. That means an endpoint can have several names.             |
-| [api_base.php](#api-base)                | The most fundamental functions. Don't change this file unless you know what you are doing.                       |
+| [settings/](#settings)                   | Folder containing settings files. Edit `my_custom_settings.php` to customize your API settings.                 |
+| [keys/](#keys)                           | Folder containing API keys. Add your keys in `my_custom_keys.php`. Pro tip: [Use a generator!](https://roste.org/rand/#rsgen) |
+| [endpoints/](#endpoints)                 | Folder containing endpoint definitions. Create your endpoints in `my_custom_endpoints.php` or separate files.   |
+| [aliases/](#aliases)                     | Folder containing endpoint aliases. Define aliases in `my_custom_aliases.php` or separate files.                |
+| [api_base.php](#base)                    | The most fundamental functions. Don't change this file unless you know what you are doing.                       |
 
 
 
 <!-- ──────────────────────────── API Settings ───────────────────────────── -->
 ### 🪛 Settings
-[`api_settings.php`](#api-settings)
+[`settings/`](#settings)
 
 This is where most of the actual configuration is done.
-In this file you will see a lot of options:
+
+**Configuration files:**
+- `default_settings.php` - Contains all default settings with documentation. Review this file to see available options.
+- `my_custom_settings.php` - Create your custom settings here. Settings defined here override the defaults.
+
+You can also create additional settings files in the `settings/` folder, and they will be automatically loaded.
+
+**Example custom settings:**
+```php
+$customs = [
+    "LOG_ENABLE"   => true,
+    "LOG_LEVEL"    => "verbose",
+    "VERBOSE_API"  => false,
+];
+```
+
+**Available settings options:**
 
 | CONSTANT                 | DESCRIPTION                                                                                           | DEFAULT                                                                       |
 | :----------------------- | :---------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------- |
@@ -111,13 +126,16 @@ In this file you will see a lot of options:
 
 <!-- ────────────────────────────── API Keys ─────────────────────────────── -->
 ### 🔑 Keys
-[`api_keys.php`](#api-keys)
+[`keys/`](#keys)
 
 > :warning: **Warning**: Please do not reuse API keys found anywhere! Generate your own keys at [roste.org](https://roste.org/rand/#rsgen).
 
 The first thing you should do is create an API key you can use.
 
-Open up `api_keys.php` and add your generated and secure key in the file like so:
+Open up `keys/my_custom_keys.php` and add your generated and secure key in the file like so:
+
+You can also organize keys by creating multiple files in the `keys/` folder (e.g., `production_keys.php`, `test_keys.php`). All PHP files in this folder will be automatically loaded.
+
 ````php
 addAPIKey(
     name: "MasterKey",
@@ -136,7 +154,7 @@ addAPIKey(
 | `array` | `allowedEndpoints`    | `["*"]`         | Endpoints this key has access to. If there is a * in the array the key will be unrestricted.            |
 | `array` | `disallowedEndpoints` | `[]`            | Endpoints this key specifically doesn't have access to, will override allowedEndpoints                  |
 | `bool`  | `noTimeOut`           | `false`         | Specify if this key can bypass the timeout                                                              |
-| `int`   | `timeout`             | `COOLDOWN_TIME` | Time in seconds this key has to wait between API calls (COOLDOWN_TIME is specified in api_settings.php) |
+| `int`   | `timeout`             | `COOLDOWN_TIME` | Time in seconds this key has to wait between API calls (COOLDOWN_TIME is specified in settings folder) |
 | `bool`  | `notify`              | `true`          | Whether or not to notify the owner of this API when an endpoint is used.                                |
 | `bool`  | `log_write`           | `true`          | Whether or not to write requests with this API key to a log file of your choosing.                      |
 
@@ -146,12 +164,13 @@ addAPIKey(
 <!--                              API ENDPOINTS                              -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 ### 💬 Endpoints
-[`api_endpoints.php`](#api-endpoints)
+[`endpoints/`](#endpoints)
 
-To create an endpoint that you can talk to, open up the file `api_endpoints.php`.
-Here are some example endpoints you can configure.
+To create an endpoint that you can talk to, open up the file `endpoints/my_custom_endpoints.php`.
 
-If you want to group your endpoints, create a subfolder called `endpoints`. All files in that folder will be included.
+You can organize your endpoints by creating multiple files in the `endpoints/` folder. All PHP files in this folder will be automatically loaded.
+
+Here are some example endpoints you can configure:
 
 
 
@@ -237,9 +256,9 @@ If you want to group your endpoints, create a subfolder called `endpoints`. All 
 <!--                          API Endpoint Aliases                           -->
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 ### 🟰 Endpoint Aliases
-[`api_aliases.php`](#api_aliases)
+[`aliases/`](#aliases)
 
-Here you can put your aliases, if you have any.
+Here you can put your aliases in the `aliases/my_custom_aliases.php` file, or create additional files in the `aliases/` folder. All PHP files in this folder will be automatically loaded.
 
 The structure must be as follows:
 ````php
