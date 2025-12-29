@@ -21,9 +21,6 @@ if (defined('CORS_ALLOW_ORIGIN')) {
 # this needs to be done here because we allow custom a index
 # Check for custom settings file first, then include api_settings.php regardless
 # as it will set defaults if it's not defined by custom_settings.
-foreach (glob("settings/*.php") as $filename) {
-    require_once($filename);
-}
 require_once('api_settings.php');
 /* ───────────────────────────────────────────────────────────────────── */
 
@@ -59,13 +56,20 @@ if (defined('ENABLE_CUSTOM_INDEX')
     // die(); # the header should redirect us, but make sure we stop running here.
 }
 
-require_once('api_includes.php');
-
-header('Content-type: application/json;'); 
+require_once('api_base.php');
+require_once('api_endpoints.php');
+require_once('api_keys.php');
+require_once('api_aliases.php');
 
 # The endpoint should always be provided in GET
 # EDIT 2023-11-06: does it really?
 if (!var_assert($_REQUEST['endpoint'])) {
+    if (file_exists("api_gui.php")) {
+        // If the api_gui.php exists, we can use it as a fallback.
+        // This is useful for development and testing purposes.
+        header('Location: api_gui.php');
+        die();
+    }
     die(err("No endpoint provided.", 404));
 }
 

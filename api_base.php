@@ -479,7 +479,13 @@ function callFunction(string $func, array $params = []) {
             }
 
             # API key was provided
-            $apikey = $params['apikey'];
+            $apikey = null;
+            foreach (['apikey', 'api_key', 'key'] as $candidate) {
+                if (isset($params[$candidate]) && $params[$candidate] !== '') {
+                    $apikey = $params[$candidate];
+                    break;
+                }
+            }
             $valid_apikey = apikey_validate($apikey);
 
             # Invalid API key
@@ -517,7 +523,7 @@ function callFunction(string $func, array $params = []) {
             if (!empty($apikey_options["sleep"])) {
                 $sleep = $apikey_options["sleep"];
                 if ($sleep > 0) {
-                    sleep($sleep);
+                    usleep($sleep*1000);
                 }
             }
 
@@ -575,7 +581,7 @@ function callFunction(string $func, array $params = []) {
             // return err("The endpoint '$func' was called a mere ".$secondsSinceLastCalled." seconds ago! Please wait another ".(COOLDOWN_TIME - $secondsSinceLastCalled)." seconds.");
         }
 
-        $functionCall = $functionObject->invoke(...$paramsClean);
+        $functionCall = $functionObject->invokeArgs($paramsClean);
         updateLastCalled($func, $valid_apikey);
 
         if (!$functionCall) {
@@ -650,14 +656,14 @@ function secondsSinceLastCalled($function_name, $valid_apikey = null) {
         }
 
         if (!var_assert($lf[$function_name])) {
-            $lastcalled = (NOW - COOLDOWN_TIME);
+            $lastcalled = (NOW_MICROSECONDS - COOLDOWN_TIME);
         } elseif (!var_assert($lf[$function_name][$valid_apikey])) {
-            $lastcalled = (NOW - COOLDOWN_TIME);
+            $lastcalled = (NOW_MICROSECONDS - COOLDOWN_TIME);
         } else {
             $lastcalled = $lf[$function_name][$valid_apikey];
         }
 
-        return (NOW - $lastcalled);
+        return (NOW_MICROSECONDS - $lastcalled);
 
     } catch (Throwable $t) {
         # This should not return false, makes it incredibly hard to troubleshoot permission error.

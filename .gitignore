@@ -3,3 +3,5 @@ custom_*
 *.json
 endpoints
 archive
+.history
+faker
