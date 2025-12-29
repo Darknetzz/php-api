@@ -17,13 +17,22 @@
 /*                                  NOTE: Function err */
 /* ────────────────────────────────────────────────────────────────────────── */
 function err(string $text, int $statusCode = 500, bool $fatal = true) {
+    // Security: Sanitize error messages in production to avoid information disclosure
+    $sanitized_text = $text;
+    if (defined('PRODUCTION_MODE') && PRODUCTION_MODE === true) {
+        // In production, don't expose detailed error messages
+        if ($statusCode >= 500) {
+            $sanitized_text = "Internal server error";
+        }
+    }
+    
     log_write($text, 'verbose');
     http_response_code($statusCode);
     return json_encode(
         [
             "httpCode" => $statusCode,
             "status" => "ERROR",
-            "data" => $text,
+            "data" => htmlspecialchars($sanitized_text, ENT_QUOTES, 'UTF-8'),
         ]
     );
 }
@@ -55,13 +64,50 @@ function var_assert(mixed &$var, mixed $assertVal = false, bool $lazy = false) :
 /*                                 Get user IP                                */
 /* ────────────────────────────────────────────────────────────────────────── */
 function userIP() {
-    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        return $_SERVER['HTTP_X_FORWARDED_FOR'];
-    }
+    // Security: Only trust X-Forwarded-For if from trusted proxy
+    // Default to REMOTE_ADDR which is more reliable and harder to spoof
     if (!empty($_SERVER['REMOTE_ADDR'])) {
-        return $_SERVER['REMOTE_ADDR'];
+        $ip = $_SERVER['REMOTE_ADDR'];
+        
+        // Only use X-Forwarded-For if configured to trust proxies
+        if (defined('TRUST_PROXY') && TRUST_PROXY === true && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            // Validate and sanitize X-Forwarded-For
+            $forwarded = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+            
+            // Determine validation flags based on configuration
+            $filter_flags = FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6;
+            if (!defined('ALLOW_PRIVATE_IPS') || ALLOW_PRIVATE_IPS === false) {
+                $filter_flags |= FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
+            }
+            
+            // Validate IP address
+            if (filter_var($forwarded, FILTER_VALIDATE_IP, $filter_flags)) {
+                $ip = $forwarded;
+            }
+        }
+        
+        return $ip;
     }
     die(err("Unable to determine IP"));
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*                            Validate JSON decode                            */
+/* ────────────────────────────────────────────────────────────────────────── */
+function validate_json_decode(string $json_string, bool $allow_empty = true) {
+    // Handle empty string case
+    if ($json_string === '') {
+        return $allow_empty ? [] : null;
+    }
+    
+    $result = json_decode($json_string, true);
+    
+    // Check for JSON decode errors
+    if ($result === null && json_last_error() !== JSON_ERROR_NONE) {
+        return null;
+    }
+    
+    return $result;
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -154,6 +200,9 @@ function log_write($txt, $level = 'info') {
                 $currLine++;
                 $remainder++;
             }
+            
+            // Reconstruct log from remaining lines
+            $currLog = implode('', $lines);
 
             // $fh      = fopen($log_file, 'w+');
             // $currLog = fread($fh);
@@ -168,10 +217,18 @@ function log_write($txt, $level = 'info') {
             // }
         }
 
-        $writeLog = $currLog.$prefix.$txt."\n";
+        // Security: Sanitize log message to prevent log injection attacks
+        // Remove newlines and other control characters that could be used to forge log entries
+        $sanitized_txt = str_replace(["\n", "\r", "\0"], ' ', $txt);
+        
+        $writeLog = $currLog.$prefix.$sanitized_txt."\n";
 
         $fh = fopen($log_file, 'w+');
-        fwrite($fh, $writeLog);
+        // Security: Use flock to prevent race conditions
+        if (flock($fh, LOCK_EX)) {
+            fwrite($fh, $writeLog);
+            flock($fh, LOCK_UN);
+        }
         fh_close($fh);
         return;
     } catch(Throwable $t) {
@@ -543,7 +600,17 @@ function callFunction(string $func, array $params = []) {
 
         return api_response(status: "OK", data: ["response" => $functionCall, "verboseInfo" => $verboseInfo]);
     } catch (Throwable $e) {
-        return err("Exception encountered while calling endpoint $func. $e");
+        // Security: Log full exception but return sanitized message
+        $full_error = "Exception encountered while calling endpoint $func. ".$e->getMessage();
+        log_write($full_error, 'verbose');
+        
+        $error_msg = "Exception encountered while calling endpoint $func.";
+        if (defined('PRODUCTION_MODE') && PRODUCTION_MODE === false) {
+            // Only show detailed exception in non-production
+            $error_msg .= " ".$e->getMessage();
+        }
+        
+        return err($error_msg);
     }
 }
 
@@ -557,8 +624,26 @@ function secondsSinceLastCalled($function_name, $valid_apikey = null) {
             touch(LAST_CALLED_JSON);
         }
 
-        $json_contents = file_get_contents(LAST_CALLED_JSON);
-        $lf = json_decode($json_contents, true);
+        // Security: Add file locking for reading to prevent race conditions
+        $fh = fopen(LAST_CALLED_JSON, 'r');
+        if (!$fh) {
+            die(err("Unable to open last called file for reading"));
+        }
+        
+        if (flock($fh, LOCK_SH)) {
+            $json_contents = stream_get_contents($fh);
+            flock($fh, LOCK_UN);
+        } else {
+            fclose($fh);
+            die(err("Unable to acquire lock on last called file"));
+        }
+        fclose($fh);
+        
+        // Security: Validate JSON decode
+        $lf = validate_json_decode($json_contents);
+        if ($lf === null) {
+            die(err("Invalid JSON in last called file"));
+        }
         
         # This endpoint is open
         if (endpoint_open($function_name) || $valid_apikey == null) {
@@ -597,14 +682,30 @@ function updateLastCalled($function_name, $valid_apikey = null) {
             touch(LAST_CALLED_JSON);
         }
 
-        $json_contents = file_get_contents(LAST_CALLED_JSON);
+        // Security: Read with shared lock
+        $fh_read = fopen(LAST_CALLED_JSON, 'r');
+        if (!$fh_read) {
+            die(err("Unable to open last called file for reading"));
+        }
+        
+        if (flock($fh_read, LOCK_SH)) {
+            $json_contents = stream_get_contents($fh_read);
+            flock($fh_read, LOCK_UN);
+        } else {
+            fclose($fh_read);
+            die(err("Unable to acquire lock on last called file"));
+        }
+        fclose($fh_read);
 
         # Create empty array if file empty
         if (empty($json_contents)) {
-            $json_contents = "";
-            $lf            = [];
+            $lf = [];
         } else {
-            $lf  = json_decode($json_contents, true);
+            // Security: Validate JSON decode
+            $lf = validate_json_decode($json_contents, false);
+            if ($lf === null) {
+                die(err("Invalid JSON in last called file"));
+            }
         }
 
         # If function array doesn't exists in JSON file, create it
@@ -625,7 +726,11 @@ function updateLastCalled($function_name, $valid_apikey = null) {
         $lf[$function_name][$valid_apikey] = NOW;
 
         $fh = fopen(LAST_CALLED_JSON, 'w+');
-        fwrite($fh, json_encode($lf));
+        // Security: Use flock to prevent race conditions
+        if (flock($fh, LOCK_EX)) {
+            fwrite($fh, json_encode($lf));
+            flock($fh, LOCK_UN);
+        }
         fh_close($fh);
 
         return true;
@@ -643,7 +748,8 @@ function in_md_array($name, $id, $array = API_KEYS) {
         die(err("The API_KEYS constant isn't a valid array."));
     }
     foreach ($array as $key => $val) {
-        if ($val[$name] == $id) {
+        // Security: Use hash_equals for constant-time comparison to prevent timing attacks
+        if (isset($val[$name]) && hash_equals((string)$val[$name], (string)$id)) {
             return $key;
         }
     }
