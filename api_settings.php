@@ -36,6 +36,11 @@ try {
         // When false, only REMOTE_ADDR is used (more secure, harder to spoof)
         "TRUST_PROXY"                  => False,
         
+        // ALLOW_PRIVATE_IPS: Whether to allow private/reserved IP ranges in X-Forwarded-For
+        // Set to true if your API needs to handle requests from internal networks
+        // Set to false for stricter validation (blocks RFC1918 and reserved ranges)
+        "ALLOW_PRIVATE_IPS"            => True,
+        
         // PRODUCTION_MODE: When enabled, reduces information disclosure in error messages
         // Set to true in production environments to avoid exposing internal details
         "PRODUCTION_MODE"              => False,

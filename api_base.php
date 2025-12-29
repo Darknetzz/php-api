@@ -73,8 +73,15 @@ function userIP() {
         if (defined('TRUST_PROXY') && TRUST_PROXY === true && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
             // Validate and sanitize X-Forwarded-For
             $forwarded = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
-            // Basic IP validation
-            if (filter_var($forwarded, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            
+            // Determine validation flags based on configuration
+            $filter_flags = FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6;
+            if (!defined('ALLOW_PRIVATE_IPS') || ALLOW_PRIVATE_IPS === false) {
+                $filter_flags |= FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
+            }
+            
+            // Validate IP address
+            if (filter_var($forwarded, FILTER_VALIDATE_IP, $filter_flags)) {
                 $ip = $forwarded;
             }
         }
@@ -82,6 +89,25 @@ function userIP() {
         return $ip;
     }
     die(err("Unable to determine IP"));
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*                            Validate JSON decode                            */
+/* ────────────────────────────────────────────────────────────────────────── */
+function validate_json_decode(string $json_string, bool $allow_empty = true) {
+    // Handle empty string case
+    if ($json_string === '') {
+        return $allow_empty ? [] : null;
+    }
+    
+    $result = json_decode($json_string, true);
+    
+    // Check for JSON decode errors
+    if ($result === null && json_last_error() !== JSON_ERROR_NONE) {
+        return null;
+    }
+    
+    return $result;
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -608,8 +634,8 @@ function secondsSinceLastCalled($function_name, $valid_apikey = null) {
         fclose($fh);
         
         // Security: Validate JSON decode
-        $lf = json_decode($json_contents, true);
-        if ($json_contents !== '' && $lf === null && json_last_error() !== JSON_ERROR_NONE) {
+        $lf = validate_json_decode($json_contents);
+        if ($lf === null) {
             die(err("Invalid JSON in last called file"));
         }
         
@@ -667,12 +693,11 @@ function updateLastCalled($function_name, $valid_apikey = null) {
 
         # Create empty array if file empty
         if (empty($json_contents)) {
-            $json_contents = "";
-            $lf            = [];
+            $lf = [];
         } else {
             // Security: Validate JSON decode
-            $lf = json_decode($json_contents, true);
-            if ($lf === null && json_last_error() !== JSON_ERROR_NONE) {
+            $lf = validate_json_decode($json_contents, false);
+            if ($lf === null) {
                 die(err("Invalid JSON in last called file"));
             }
         }

@@ -33,8 +33,10 @@ if (defined('ENABLE_CUSTOM_INDEX_NOPARAMS')
     && empty($_REQUEST) 
     && basename(__FILE__) !== basename(CUSTOM_INDEX_NOPARAMS)) {
     // Security: Validate redirect URL to prevent open redirect
+    // Only allow simple filenames without directory traversal
     $redirect = CUSTOM_INDEX_NOPARAMS;
-    if (!preg_match('/^[a-zA-Z0-9_\-\.\/]+\.php$/', $redirect) || strpos($redirect, '..') !== false) {
+    $basename = basename($redirect);
+    if ($basename !== $redirect || !preg_match('/^[a-zA-Z0-9_\-]+\.php$/', $basename)) {
         die(err("Invalid custom index configuration", 500));
     }
     header('Location: '.htmlspecialchars($redirect, ENT_QUOTES, 'UTF-8'));
@@ -47,8 +49,10 @@ if (defined('ENABLE_CUSTOM_INDEX')
     && !empty($_REQUEST)
     && basename(__FILE__) !== basename(CUSTOM_INDEX)) {
     // Security: Validate redirect URL to prevent open redirect
+    // Only allow simple filenames without directory traversal
     $redirect = CUSTOM_INDEX;
-    if (!preg_match('/^[a-zA-Z0-9_\-\.\/]+\.php$/', $redirect) || strpos($redirect, '..') !== false) {
+    $basename = basename($redirect);
+    if ($basename !== $redirect || !preg_match('/^[a-zA-Z0-9_\-]+\.php$/', $basename)) {
         die(err("Invalid custom index configuration", 500));
     }
     header('Location: '.htmlspecialchars($redirect, ENT_QUOTES, 'UTF-8')."?".http_build_query($_REQUEST));
