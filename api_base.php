@@ -140,11 +140,11 @@ function endpoint_open(string $endpoint) {
         }
     }
     if (WHITELIST_MODE == False) {
-        foreach (PROTECTED_ENDPOINTS as $protep) {
-            if ($endpoint != $protep && 'api_'.$endpoint != $protep) {
-                return True;
-            }
-        }
+        $protected = array_map(function ($e) {
+            return (strpos($e, 'api_') === 0) ? $e : 'api_' . $e;
+        }, PROTECTED_ENDPOINTS);
+        $normalized = (strpos($endpoint, 'api_') === 0) ? $endpoint : 'api_' . $endpoint;
+        return !in_array($normalized, $protected, true);
     }
     return false;
 }
@@ -153,15 +153,16 @@ function endpoint_open(string $endpoint) {
 /*                              NOTE: log_write()                             */
 /* ────────────────────────────────────────────────────────────────────────── */
 function log_write($txt, $level = 'info') {
-    if (isset($log_enable) && $log_enable !== false) {
+    if (!defined('LOG_ENABLE') || LOG_ENABLE === false) {
+        return;
+    }
     try {
         global $apikey_logging;
-        if (!isset($apikey_logging) || !$apikey_logging === true) {
+        if (!isset($apikey_logging) || $apikey_logging !== true) {
             return;
         }
         $level        = strtoupper($level);
         $log_level    = (defined('LOG_LEVEL')  ? strtoupper(LOG_LEVEL) : 'INFO');
-        $log_enable   = (defined('LOG_ENABLE') ? LOG_ENABLE    : null);
         $log_file     = (defined('LOG_FILE')   ? LOG_FILE      : 'api.log');
         $log_maxlines = (defined('LOG_MAXLINES') ? LOG_MAXLINES: 1000);
 
@@ -234,7 +235,6 @@ function log_write($txt, $level = 'info') {
     } catch(Throwable $t) {
         die(err("Unable to write to log: $t"));
     }
-}
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -390,8 +390,7 @@ function api_response(string $status, mixed $data) : string {
 
     # filterdata (endpoint output filtering)
     if (var_assert($params['filterdata'])) {
-        $filterdata = strstr($params['filterdata'], " ", "");
-        $filterdata = explode(",", $params['filterdata']);
+        $filterdata = array_map('trim', explode(",", $params['filterdata']));
 
         $allFilters = [];
         foreach ($filterdata as $thisfilter) {
@@ -527,6 +526,11 @@ function callFunction(string $func, array $params = []) {
                 }
             }
 
+        } else {
+            # Open endpoint: use default options so cooldown/logging checks don't break
+            $apikey_options = defined('APIKEY_DEFAULT_OPTIONS') ? APIKEY_DEFAULT_OPTIONS : [];
+            $GLOBALS['apikey_logging'] = !empty($apikey_options['log_write']);
+            $valid_apikey = null;
         }
         /* ────────────────────────────────────────────────────────────────────────── */
 
@@ -590,10 +594,9 @@ function callFunction(string $func, array $params = []) {
         }
 
         if (NOTIFY_API === true) {
-            if (API_KEYS[$valid_apikey]["options"]["notify"] === true) {
+            if (!empty($valid_apikey) && !empty(API_KEYS[$valid_apikey]["options"]["notify"])) {
                 api_sms(NOTIFY_NUMBER, "API Called by $valid_apikey: $params[endpoint]");
-            }
-            if (empty($valid_apikey)) {
+            } elseif (empty($valid_apikey)) {
                 api_sms(NOTIFY_NUMBER, "API Called by ".userIP().": $params[endpoint]");
             }
         }
@@ -760,12 +763,7 @@ function in_md_array($name, $id, $array = API_KEYS) {
 /*                                  NOTE: Function apikey_validate */
 /* ────────────────────────────────────────────────────────────────────────── */
 function apikey_validate($apikey) {
-    $name = in_md_array("key", $apikey);
-    return $name;
-    if (!$name) {
-        die(err("Invalid key $apikey"));
-    }
-    return $name;
+    return in_md_array("key", $apikey);
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
