@@ -1,5 +1,5 @@
 # Protect config, keys, data, and CLI scripts from direct HTTP access
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteRule ^(keys|settings|lib|data|bin)/ - [F,L]
+    RewriteRule ^(keys|settings|lib|data|bin|examples)/ - [F,L]
 </IfModule>

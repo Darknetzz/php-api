@@ -30,6 +30,10 @@ do {
     
     if ($count == $count_excludes) {
         require_once($endpoints_folder."/my_custom_endpoints.php");
+        $example_endpoints = dirname(__FILE__) . '/examples/endpoints_quote_funfact.php';
+        if (is_file($example_endpoints)) {
+            require_once($example_endpoints);
+        }
         break;
     }
     
@@ -39,6 +43,12 @@ do {
                 require_once($file);
             }
         }
+
+        $example_endpoints = dirname(__FILE__) . '/examples/endpoints_quote_funfact.php';
+        if (is_file($example_endpoints)) {
+            require_once($example_endpoints);
+        }
+
         break;
     }
 
