@@ -26,14 +26,33 @@ function guiH(string $value): string
     <link rel="stylesheet" href="https://ubuntu.roste.org/_assets/tabler.min.css">
     <script src="https://ubuntu.roste.org/_assets/tabler.min.js"></script>
     <style>
+        .gui-shell { max-width: 1600px; }
         .endpoint-card { margin-bottom: 1rem; }
-        .try-result { max-height: 20rem; overflow: auto; font-size: 0.85rem; }
+        .try-result-shell { display: flex; flex-direction: column; min-height: 14rem; }
+        .try-result-shell .alert { flex: 1; display: flex; align-items: center; }
+        .try-result {
+            max-height: 42rem;
+            min-height: 14rem;
+            overflow: auto;
+            font-size: 0.8125rem;
+            line-height: 1.45;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            white-space: pre;
+            tab-size: 2;
+            margin-bottom: 0;
+        }
+        .try-result code { color: #cbd5e1; }
+        .json-key { color: #7dd3fc; }
+        .json-string { color: #86efac; }
+        .json-number { color: #fcd34d; }
+        .json-boolean { color: #f9a8d4; }
+        .json-null { color: #9ca3af; }
         .badge-open { background-color: #2fb344; color: #fff !important; }
         .badge-protected { background-color: #626976; color: #fff !important; }
     </style>
 </head>
 <body data-bs-theme="dark">
-    <div class="container pt-5 pb-5">
+    <div class="container-fluid gui-shell pt-5 pb-5 px-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="mb-0">API Endpoints</h1>
             <div>
@@ -50,8 +69,8 @@ function guiH(string $value): string
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-lg-7" id="endpoint-list">
+        <div class="row g-4">
+            <div class="col-xl-5 col-lg-6" id="endpoint-list">
                 <?php foreach (discoverEndpointPhpFiles() as $endpointFile): ?>
                     <?php $functions = discoverApiFunctionsReflection($endpointFile); ?>
                     <?php if ($functions === []) continue; ?>
@@ -86,23 +105,28 @@ function guiH(string $value): string
                 <?php endforeach; ?>
             </div>
 
-            <div class="col-lg-5">
-                <div class="card sticky-top" style="top: 1rem;">
+            <div class="col-xl-7 col-lg-6">
+                <div class="card sticky-top try-panel" style="top: 1rem;">
                     <div class="card-header"><h3 class="card-title mb-0">Try endpoint</h3></div>
                     <div class="card-body">
                         <form id="try-form">
-                            <div class="mb-3">
-                                <label class="form-label" for="try-endpoint">Endpoint</label>
-                                <input type="text" class="form-control" id="try-endpoint" name="endpoint" required>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="try-endpoint">Endpoint</label>
+                                    <input type="text" class="form-control" id="try-endpoint" name="endpoint" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="try-apikey">API key <span class="text-secondary">(if required)</span></label>
+                                    <input type="password" class="form-control" id="try-apikey" name="apikey" autocomplete="off">
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label" for="try-apikey">API key <span class="text-secondary">(if required)</span></label>
-                                <input type="password" class="form-control" id="try-apikey" name="apikey" autocomplete="off">
-                            </div>
-                            <div class="mb-3" id="try-params"></div>
-                            <button type="submit" class="btn btn-primary w-100">Send request</button>
+                            <div class="mb-3 mt-3" id="try-params"></div>
+                            <button type="submit" class="btn btn-primary">Send request</button>
                         </form>
-                        <pre class="try-result mt-3 p-2 bg-dark border rounded text-secondary" id="try-result">Response will appear here.</pre>
+                        <div class="try-result-shell mt-3 flex-grow-1">
+                            <div id="try-result-alert" class="alert d-none mb-0" role="status"></div>
+                            <pre class="try-result p-3 bg-dark border rounded mb-0" id="try-result"><code id="try-result-code">Response will appear here.</code></pre>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -116,6 +140,60 @@ function guiH(string $value): string
         const tryApikey = document.getElementById('try-apikey');
         const tryParams = document.getElementById('try-params');
         const tryResult = document.getElementById('try-result');
+        const tryResultCode = document.getElementById('try-result-code');
+        const tryResultAlert = document.getElementById('try-result-alert');
+
+        function showTryPre() {
+            tryResultAlert.classList.add('d-none');
+            tryResult.classList.remove('d-none');
+        }
+
+        function showTryAlert(message, variant) {
+            tryResult.classList.add('d-none');
+            tryResultAlert.className = 'alert alert-' + variant + ' mb-0';
+            tryResultAlert.textContent = message;
+            tryResultAlert.classList.remove('d-none');
+        }
+
+        function setTryResultPlain(text, tone) {
+            showTryPre();
+            tryResultCode.textContent = text;
+            tryResultCode.className = '';
+            if (tone === 'ready') {
+                showTryAlert(text, 'success');
+            } else if (tone === 'loading') {
+                showTryAlert(text, 'info');
+            }
+        }
+
+        function setTryResultJson(value) {
+            showTryPre();
+            tryResultCode.className = 'language-json';
+            tryResultCode.innerHTML = highlightJson(value);
+        }
+
+        function highlightJson(value) {
+            const json = JSON.stringify(value, null, 2);
+            const escaped = json
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            return escaped.replace(
+                /("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+                function (match) {
+                    let cls = 'json-number';
+                    if (/^"/.test(match)) {
+                        cls = /:$/.test(match) ? 'json-key' : 'json-string';
+                    } else if (/true|false/.test(match)) {
+                        cls = 'json-boolean';
+                    } else if (/null/.test(match)) {
+                        cls = 'json-null';
+                    }
+                    return '<span class="' + cls + '">' + match + '</span>';
+                }
+            );
+        }
 
         searchInput.addEventListener('input', function () {
             const q = this.value.toLowerCase();
@@ -159,7 +237,7 @@ function guiH(string $value): string
                 tryEndpoint.value = btn.dataset.endpoint;
                 tryApikey.required = btn.dataset.open !== '1';
                 renderParams(JSON.parse(btn.dataset.params || '[]'));
-                tryResult.textContent = 'Ready to send request.';
+                setTryResultPlain('Ready to send request.', 'ready');
             });
         });
 
@@ -175,17 +253,17 @@ function guiH(string $value): string
                     params.set(input.dataset.paramName, input.value);
                 }
             });
-            tryResult.textContent = 'Loading...';
+            setTryResultPlain('Loading...', 'loading');
             try {
                 const response = await fetch('index.php?' + params.toString());
                 const text = await response.text();
                 try {
-                    tryResult.textContent = JSON.stringify(JSON.parse(text), null, 2);
+                    setTryResultJson(JSON.parse(text));
                 } catch (e) {
-                    tryResult.textContent = text;
+                    setTryResultPlain(text);
                 }
             } catch (err) {
-                tryResult.textContent = String(err);
+                setTryResultPlain(String(err));
             }
         });
     </script>

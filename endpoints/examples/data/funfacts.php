@@ -330,4 +330,12 @@ return [
             'fact' => 'The Apollo 11 astronauts couldn\'t get life insurance, so they signed autographs instead.',
             'extraInfo' => 'Before launch, Armstrong, Aldrin, and Collins signed hundreds of envelopes their families could sell if the mission failed.',
         ],
+        [ 
+            'fact' => 'The first computer mouse was made of wood.',
+            'extraInfo' => 'The first computer mouse was made of wood by Douglas Engelbart in 1964. It was a simple device that used a ball to detect movement and a button to click.',
+        ],
+        [
+            'fact' => 'Pringles can inventor Fredric Baur was so proud of his creation that he asked to be buried in one—and after his death in 2008, his family placed part of his ashes in a Pringles can.',
+            'extraInfo' => 'the inventor of the Pringles can, Fredric Baur, was so proud of his invention that when he died in 2008, his family buried part of his ashes in one. His children actually stopped at a Pringles can on the way to the funeral home to pick one up. Not many people can say they\'re buried in their greatest achievement!',
+        ],
     ];
