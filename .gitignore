@@ -1,7 +1,11 @@
 custom_*
 *.log
 *.json
-endpoints
+endpoints/*
+!endpoints/my_custom_endpoints.php
+!endpoints/examples/
+endpoints/examples/*
+!endpoints/examples/**
 archive
 .history
 faker

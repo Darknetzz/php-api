@@ -76,17 +76,12 @@ function keysGuiFlashGet(): ?array
 /** @return list<string> */
 function keysGuiDiscoverEndpoints(): array
 {
-    $endpoints = [];
+    require_once __DIR__ . '/lib/endpoint_discovery.php';
 
-    foreach (glob(__DIR__ . '/endpoints/*.php') ?: [] as $file) {
-        $contents = @file_get_contents($file);
-        if ($contents === false) {
-            continue;
-        }
-        if (preg_match_all('/function\s+(api_[a-zA-Z0-9_]+)\s*\(/', $contents, $matches)) {
-            foreach ($matches[1] as $func) {
-                $endpoints[preg_replace('/^api_/', '', $func)] = true;
-            }
+    $endpoints = [];
+    foreach (discoverEndpointPhpFiles() as $file) {
+        foreach (discoverApiFunctionsFromFile($file) as $func) {
+            $endpoints[$func['clean']] = true;
         }
     }
 

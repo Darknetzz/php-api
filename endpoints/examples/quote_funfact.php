@@ -3,12 +3,12 @@
 /**
  * Example endpoints: random quote and fun fact.
  *
- * Data lives in examples/quotes.php and examples/funfacts.php (tracked in git).
+ * Data: endpoints/examples/data/quotes.php, funfacts.php (tracked in git).
  */
 
 function api_quote(): array
 {
-    $quotes = require __DIR__ . '/quotes.php';
+    $quotes = require __DIR__ . '/data/quotes.php';
 
     $rollAuthor = mt_rand(0, count($quotes) - 1);
     $authorName = $quotes[$rollAuthor][0];
@@ -21,7 +21,7 @@ function api_quote(): array
 
 function api_funfact(): array
 {
-    $funfacts = require __DIR__ . '/funfacts.php';
+    $funfacts = require __DIR__ . '/data/funfacts.php';
     $roll = mt_rand(0, count($funfacts) - 1);
 
     return [

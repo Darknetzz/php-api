@@ -65,7 +65,7 @@ php bin/api-keys.php disable MyKey
 | API keys (file mode) | `keys/my_custom_keys.php` or `keys/custom_*.php` | `api_keys.php` |
 | API keys (DB mode) | `bin/api-keys.php`, `lib/ApiKeyStore.php` | — |
 | Endpoints | `endpoints/my_custom_endpoints.php` or `endpoints/custom_*.php` | `api_endpoints.php` |
-| Example data | `examples/quotes.php`, `examples/funfacts.php` | — |
+| Example endpoints/data | `endpoints/examples/` (tracked; `custom_*` in `endpoints/` is gitignored) | — |
 | Aliases | `aliases/my_custom_aliases.php` or `aliases/custom_*.php` | `api_aliases.php` |
 | Core behavior | `api_base.php` only when necessary | — |
 

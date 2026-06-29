@@ -13,6 +13,8 @@
     #       the 'endpoints' folder instead.
 */
 
+require_once dirname(__FILE__) . '/lib/endpoint_discovery.php';
+
 do {
     # Check if endpoints folder contains custom configuration files.
     $endpoints_folder   = dirname(__FILE__) . '/endpoints';  # Relative path to endpoints folder.
@@ -27,10 +29,11 @@ do {
         $endpoints_folder."/my_custom_endpoints.php",
     ];
     $count_excludes = count($excludes);
+
+    $example_endpoints = "$endpoints_folder/examples/quote_funfact.php";
     
     if ($count == $count_excludes) {
         require_once($endpoints_folder."/my_custom_endpoints.php");
-        $example_endpoints = dirname(__FILE__) . '/examples/endpoints_quote_funfact.php';
         if (is_file($example_endpoints)) {
             require_once($example_endpoints);
         }
@@ -39,12 +42,11 @@ do {
     
     if ($count > $count_excludes) {
         foreach (glob($endpoints_folder."/*.php") as $file) {
-            if (!in_array($file, $excludes)) {
+            if (!in_array($file, $excludes, true)) {
                 require_once($file);
             }
         }
 
-        $example_endpoints = dirname(__FILE__) . '/examples/endpoints_quote_funfact.php';
         if (is_file($example_endpoints)) {
             require_once($example_endpoints);
         }
