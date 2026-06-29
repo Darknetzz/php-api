@@ -32,7 +32,7 @@ function err(string $text, int $statusCode = 500, bool $fatal = true) {
         [
             "httpCode" => $statusCode,
             "status" => "ERROR",
-            "data" => htmlspecialchars($sanitized_text, ENT_QUOTES, 'UTF-8'),
+            "data" => $sanitized_text,
         ]
     );
 }
