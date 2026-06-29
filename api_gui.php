@@ -40,6 +40,8 @@ function guiH(string $value): string
             white-space: pre;
             tab-size: 2;
             margin-bottom: 0;
+            background-color: #151922;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
         .try-result code { color: #cbd5e1; }
         .json-key { color: #7dd3fc; }
@@ -125,7 +127,7 @@ function guiH(string $value): string
                         </form>
                         <div class="try-result-shell mt-3 flex-grow-1">
                             <div id="try-result-alert" class="alert d-none mb-0" role="status"></div>
-                            <pre class="try-result p-3 bg-dark border rounded mb-0" id="try-result"><code id="try-result-code">Response will appear here.</code></pre>
+                            <pre class="try-result p-3 rounded mb-0" id="try-result"><code id="try-result-code">Response will appear here.</code></pre>
                         </div>
                     </div>
                 </div>
