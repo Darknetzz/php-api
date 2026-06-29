@@ -5,6 +5,8 @@ namespace Tests;
 use ApiKeyStore;
 use PHPUnit\Framework\TestCase;
 
+require_once __DIR__ . '/fixtures/callfunction_endpoints.php';
+
 final class CallFunctionTest extends TestCase
 {
     private static ApiKeyStore $store;
@@ -13,20 +15,6 @@ final class CallFunctionTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         require_once dirname(__DIR__) . '/api_base.php';
-
-        if (!function_exists('api_cf_open')) {
-            function api_cf_open(): array
-            {
-                return ['open' => true];
-            }
-        }
-
-        if (!function_exists('api_cf_protected')) {
-            function api_cf_protected(): array
-            {
-                return ['protected' => true];
-            }
-        }
 
         self::$dbPath = sys_get_temp_dir() . '/php-api-cf-' . uniqid('', true) . '.db';
         $pdo = new \PDO('sqlite:' . self::$dbPath);
@@ -44,7 +32,7 @@ final class CallFunctionTest extends TestCase
             'allowedEndpoints' => ['cf_protected'],
             'log_write' => false,
             'noTimeOut' => false,
-            'cooldown' => 3600,
+            'cooldown' => 1,
         ]);
 
         if (!defined('API_KEYS')) {
@@ -64,7 +52,7 @@ final class CallFunctionTest extends TestCase
                         'allowedEndpoints' => ['cf_protected'],
                         'log_write' => false,
                         'noTimeOut' => false,
-                        'cooldown' => 3600,
+                        'cooldown' => 1,
                     ]),
                 ],
             ]);
@@ -105,6 +93,11 @@ final class CallFunctionTest extends TestCase
 
     public function testCooldownBlocksRapidRepeat(): void
     {
+        ensureLastCalledJsonFile();
+        $lf = json_decode((string) file_get_contents(LAST_CALLED_JSON), true) ?: [];
+        $lf['api_cf_protected']['cfcool'] = time() - 60;
+        file_put_contents(LAST_CALLED_JSON, json_encode($lf));
+
         $params = [
             'endpoint' => 'cf_protected',
             'apikey' => 'cool-secret',
