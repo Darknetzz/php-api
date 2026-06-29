@@ -10,5 +10,7 @@ archive
 .history
 faker
 data/
+!endpoints/examples/data/
+!endpoints/examples/data/**
 vendor/
 composer.lock
