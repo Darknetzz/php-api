@@ -91,6 +91,17 @@ This document outlines the security measures implemented in this PHP API and bes
 - Configurable per-deployment
 - Can be restricted to specific domains
 
+### 11. API Key Database Store
+**Improvement**: API keys can be stored in SQLite or Turso (libSQL) instead of plaintext PHP files.
+
+**Implementation**:
+- `KEY_STORE_DRIVER`: `php` | `sqlite` | `turso`
+- Keys stored as SHA-256 hashes in `api_keys` table
+- CLI migration: `php bin/migrate-keys.php`
+- CLI management: `php bin/api-keys.php`
+- HTTP header auth: `apikey`, `X-Api-Key`, or `Authorization: Bearer`
+- `.htaccess` rules block direct access to `keys/`, `settings/`, `lib/`, `data/`
+
 ## Security Settings Reference
 
 ### Required Settings for Production
@@ -114,14 +125,28 @@ const LOG_ENABLE = true;                // Enable logging for security monitorin
 ## Best Practices
 
 ### 1. API Key Management
+- **Recommended:** use SQLite or Turso (`KEY_STORE_DRIVER`) — keys stored as SHA-256 hashes in `data/api.db` or a Turso database
 - Generate strong random API keys (minimum 32 characters)
-- Use a secure random generator: https://roste.org/rand/#rsgen
-- Store keys in `keys/` directory (excluded from git)
-- Rotate keys periodically
+- Migrate from PHP files: `php bin/migrate-keys.php [--rotate]`
+- Manage keys via CLI: `php bin/api-keys.php list|create|disable`
+- Rotate keys periodically; never commit `keys/custom_*.php` or `data/api.db`
+
+```php
+// settings (hostname-specific)
+"KEY_STORE_DRIVER" => "sqlite",
+"KEY_STORE_DSN"    => "/var/lib/php-api/api.db",  // outside webroot in production
+
+// Turso (multi-host)
+"KEY_STORE_DRIVER" => "turso",
+"KEY_STORE_URL"    => "libsql://your-db.turso.io",
+"KEY_STORE_TOKEN"  => getenv("TURSO_AUTH_TOKEN"),
+```
 
 ### 2. File Permissions
 ```bash
 # Recommended permissions
+chmod 750 data/
+chmod 640 data/api.db
 chmod 640 keys/*.php
 chmod 640 settings/*.php
 chmod 660 api.log

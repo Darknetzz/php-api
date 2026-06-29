@@ -3,45 +3,51 @@
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                                   api_aliases.php                           */
 /* ────────────────────────────────────────────────────────────────────────── */
-/* ──────── Made with ❤️ by darknetzz @ https://github.com/darknetzz ──────── */
-/* ────────────────────────────────────────────────────────────────────────── */
-/*
-    # This file should contain the default values for everything in aliases -
-    # and it should be applied if the constants are not defined, which could cause an error.
-
-    # NOTE: Please do not change this file directly, change the values in
-    #       the 'aliases' folder instead.
-*/
 
 do {
-    # Check if aliases folder contains custom configuration files.
-    $aliases_folder   = dirname(__FILE__) . '/aliases';  # Relative path to aliases folder.
-    $aliases_files    = glob("$aliases_folder/*.php");   # Get all files in the aliases folder.
-    $count            = count($aliases_files);           # Count the number of files in the aliases folder.
+    $aliases_folder = dirname(__FILE__) . '/aliases';
+    $aliases_files  = glob("$aliases_folder/*.php");
 
     if (empty($aliases_files)) {
         die("No aliases files found in aliases folder.");
     }
 
     $excludes = [
-        $aliases_folder."/my_custom_aliases.php",
+        $aliases_folder . "/my_custom_aliases.php",
     ];
+    $count          = count($aliases_files);
     $count_excludes = count($excludes);
-    
-    if ($count == $count_excludes) {
-        require_once($aliases_folder."/my_custom_aliases.php");
-        break;
-    }
-    
-    if ($count > $count_excludes) {
-        foreach (glob($aliases_folder."/*.php") as $file) {
-            if (!in_array($file, $excludes)) {
-                require_once($file);
+
+    $endpoint_aliases = [];
+
+    $loadFile = function (string $file) use (&$endpoint_aliases) {
+        $aliases = null;
+        require $file;
+        if (!isset($aliases) || !is_array($aliases)) {
+            return;
+        }
+        foreach ($aliases as $canonical => $aliasNames) {
+            $canonicalShort = str_starts_with($canonical, 'api_') ? substr($canonical, 4) : $canonical;
+            foreach ($aliasNames as $alias) {
+                $aliasShort = str_starts_with($alias, 'api_') ? substr($alias, 4) : $alias;
+                $endpoint_aliases[$aliasShort] = $canonicalShort;
             }
         }
-        break;
+    };
+
+    if ($count == $count_excludes) {
+        $loadFile($aliases_folder . "/my_custom_aliases.php");
+    } elseif ($count > $count_excludes) {
+        foreach (glob($aliases_folder . "/*.php") as $file) {
+            if (!in_array($file, $excludes)) {
+                $loadFile($file);
+            }
+        }
+    } else {
+        die("Something went wrong while loading aliases files.");
     }
 
-    die("Something went wrong while loading aliases files.");
+    if (!defined('ENDPOINT_ALIASES')) {
+        define('ENDPOINT_ALIASES', $endpoint_aliases);
+    }
 } while (False);
-?>

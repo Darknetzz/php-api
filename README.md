@@ -131,16 +131,46 @@ $customs = [
 
 > :warning: **Warning**: Please do not reuse API keys found anywhere! Generate your own keys at [roste.org](https://roste.org/rand/#rsgen).
 
-The first thing you should do is create an API key you can use.
+API keys can be stored in a **SQLite database** (recommended) or legacy PHP files.
 
-Open up `keys/my_custom_keys.php` and add your generated and secure key in the file like so:
+#### SQLite key store (recommended)
 
-You can also organize keys by creating multiple files in the `keys/` folder (e.g., `production_keys.php`, `test_keys.php`). All PHP files in this folder will be automatically loaded.
+In your hostname settings file (e.g. `settings/custom_ubuntu01.php`):
+
+```php
+"KEY_STORE_DRIVER" => "sqlite",
+"KEY_STORE_DSN"    => "/var/lib/php-api/api.db",  // outside webroot in production
+```
+
+Migrate existing keys from `keys/custom_api_keys.php`:
+
+```bash
+php bin/migrate-keys.php          # import existing keys (hashed in DB)
+php bin/migrate-keys.php --rotate # import with new random keys
+php bin/api-keys.php list
+php bin/api-keys.php create MyService --endpoint=datetime
+```
+
+Authentication accepts the key via query param (`apikey`) or HTTP header (`apikey`, `X-Api-Key`, or `Authorization: Bearer`).
+
+#### Turso (multi-host / cloud)
+
+Requires `composer require turso/libsql` and:
+
+```php
+"KEY_STORE_DRIVER" => "turso",
+"KEY_STORE_URL"    => "libsql://your-db.turso.io",
+"KEY_STORE_TOKEN"  => getenv("TURSO_AUTH_TOKEN"),
+```
+
+#### Legacy PHP file keys
+
+Set `KEY_STORE_DRIVER` to `php` and define keys in `keys/custom_api_keys.php`:
 
 ````php
 addAPIKey(
     name: "MasterKey",
-    key: "nrTv7xL6qyoOhWH7VBoh0Fs9JwChcoBNLhj1Us7l7zQKENBT0N8cZwDwB48YPdRL",
+    key: "your-generated-key-here",
     options: [
         "allowedEndpoints" => ["testEndpoint", "anotherEndpoint"], 
         "noTimeOut"        => true           , 
@@ -148,6 +178,8 @@ addAPIKey(
     ]
 );
 ````
+
+You can also organize keys by creating multiple files in the `keys/` folder. All PHP files in this folder will be automatically loaded when using the `php` driver.
 
 **Option parameters**
 | TYPE    | NAME                  | DEFAULT VALUE   | DESCRIPTION                                                                                             |

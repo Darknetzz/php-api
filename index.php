@@ -60,11 +60,8 @@ require_once('api_keys.php');
 require_once('api_aliases.php');
 
 # The endpoint should always be provided in GET
-# EDIT 2023-11-06: does it really?
 if (!var_assert($_REQUEST['endpoint'])) {
-    if (file_exists("api_gui.php")) {
-        // If the api_gui.php exists, we can use it as a fallback.
-        // This is useful for development and testing purposes.
+    if (defined('ENABLE_API_GUI') && ENABLE_API_GUI === true && file_exists("api_gui.php")) {
         header('Location: api_gui.php');
         die();
     }
@@ -72,18 +69,24 @@ if (!var_assert($_REQUEST['endpoint'])) {
 }
 
 // Security: Validate endpoint name to prevent code injection
-$endpoint_input = $_REQUEST['endpoint'];
+$endpoint_input = resolveEndpointName($_REQUEST['endpoint']);
 if (!preg_match('/^[a-zA-Z0-9_]+$/', $endpoint_input)) {
     die(err("Invalid endpoint name. Only alphanumeric characters and underscores are allowed.", 400));
 }
 
 $endpoint = "api_".$endpoint_input;
+if (!function_exists($endpoint)) {
+    $fallback = "api_" . preg_replace('/[^a-zA-Z0-9_]/', '', (string) $_REQUEST['endpoint']);
+    if (function_exists($fallback)) {
+        $endpoint = $fallback;
+    }
+}
 
 # Apart from that we don't wish to extinguish between request methods (for now), unless unspecified.
 if (empty($_SERVER['REQUEST_METHOD'])) {
     die(err("Invalid request method"));
 }
-$args = $_REQUEST;
+$args = mergeAuthHeaders($_REQUEST);
 
 $functionCall = callFunction($endpoint, $args);
 

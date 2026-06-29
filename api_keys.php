@@ -2,15 +2,6 @@
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                                   api_keys.php                             */
 /* ────────────────────────────────────────────────────────────────────────── */
-/* ──────── Made with ❤️ by darknetzz @ https://github.com/darknetzz ──────── */
-/* ────────────────────────────────────────────────────────────────────────── */
-/*
-    # This file should contain the default values for everything in keys -
-    # and it should be applied if the constants are not defined, which could cause an error.
-
-    # NOTE: Please do not change this file directly, change the values in
-    #       the 'keys' folder instead.
-*/
 
 if (defined('API_KEYS')) {
     die("
@@ -19,25 +10,36 @@ if (defined('API_KEYS')) {
     ");
 }
 
+$apikeys = [];
+$keyStore = getApiKeyStore();
+
+if ($keyStore instanceof ApiKeyStore) {
+    $apikeys = $keyStore->loadAll();
+    if (empty($apikeys)) {
+        die("No API keys found in key store. Run: php bin/migrate-keys.php");
+    }
+    define('API_KEYS', $apikeys);
+    return;
+}
+
 do {
-    # Check if keys folder contains custom configuration files.
-    $keys_folder    = dirname(__FILE__) . '/keys'; # Relative path to keys folder.
-    $keys_files     = glob("$keys_folder/*.php");  # Get all files in the keys folder.
-    $count          = count($keys_files);          # Count the number of files in the keys folder.
+    $keys_folder = dirname(__FILE__) . '/keys';
+    $keys_files  = glob("$keys_folder/*.php");
 
     if (empty($keys_files)) {
         die("No keys files found in keys folder.");
     }
 
     $excludes = [
-        $keys_folder."/my_custom_keys.php",
+        $keys_folder . "/my_custom_keys.php",
     ];
+    $count          = count($keys_files);
     $count_excludes = count($excludes);
-    
+
     if ($count == $count_excludes) {
-        require_once($keys_folder."/my_custom_keys.php");
+        require_once($keys_folder . "/my_custom_keys.php");
     } elseif ($count > $count_excludes) {
-        foreach (glob($keys_folder."/*.php") as $file) {
+        foreach (glob($keys_folder . "/*.php") as $file) {
             if (!in_array($file, $excludes)) {
                 require_once($file);
             }
@@ -49,9 +51,4 @@ do {
     }
 
     define('API_KEYS', $apikeys);
-    break;
-
-    die("Something went wrong while loading keys files.");
-    
 } while (False);
-?>

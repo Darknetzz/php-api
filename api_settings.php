@@ -70,6 +70,17 @@ do {
         // Default is '*' for backward compatibility
         "CORS_ALLOW_ORIGIN"            => "*",
 
+        "ENABLE_API_GUI"               => False,
+
+        /* ───────────────────────────────────────────────────────────────────── */
+        /*                           API Key Store                               */
+        /* ───────────────────────────────────────────────────────────────────── */
+        // KEY_STORE_DRIVER: php (file), sqlite (local DB), or turso (libSQL cloud)
+        "KEY_STORE_DRIVER"             => "php",
+        "KEY_STORE_DSN"                => "",  // sqlite path; default: {api_root}/data/api.db
+        "KEY_STORE_URL"                => "",
+        "KEY_STORE_TOKEN"              => "",
+
         /* ───────────────────────────────────────────────────────────────────── */
         /*                           HTTP Status codes                           */
         /* ───────────────────────────────────────────────────────────────────── */

@@ -5,3 +5,6 @@ endpoints
 archive
 .history
 faker
+data/
+vendor/
+composer.lock
