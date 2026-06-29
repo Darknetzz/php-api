@@ -28,6 +28,15 @@ do {
         $settings_folder."/custom_api_settings.php",
     ];
     
+    # Load hostname-specific settings before defaults so they can override.
+    if ($count > 2) {
+        foreach (glob($settings_folder."/*.php") as $file) {
+            if (!in_array($file, $excludes, true)) {
+                require_once($file);
+            }
+        }
+    }
+
     # Define default values for settings (from main branch security improvements)
     $defaults = [
         /* ───────────────────────────────────────────────────────────────────── */
@@ -168,15 +177,7 @@ do {
         }
     }
     
-    if ($count > 2) {
-        foreach (glob($settings_folder."/*.php") as $file) {
-            if (!in_array($file, $excludes)) {
-                require_once($file);
-            }
-        }
-    }
-
-    # Include defaults regardless, as it will only set the undefined settings
+    # Fill in any remaining defaults
     require_once($settings_folder."/default_settings.php");
 
 } while (False);
