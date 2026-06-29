@@ -1,5 +1,6 @@
 custom_*
 *.log
+*.log.*
 *.json
 endpoints/*
 !endpoints/my_custom_endpoints.php

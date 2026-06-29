@@ -157,6 +157,50 @@ function endpoint_open(string $endpoint) {
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                              NOTE: log_write()                             */
 /* ────────────────────────────────────────────────────────────────────────── */
+function rotateLogFileIfNeeded(string $logFile): void
+{
+    $maxLines = defined('LOG_MAXLINES') ? (int) LOG_MAXLINES : 1000;
+    $keep = defined('LOG_ROTATE_KEEP') ? (int) LOG_ROTATE_KEEP : 5;
+    if ($maxLines < 1 || $keep < 1) {
+        return;
+    }
+
+    if (!is_file($logFile)) {
+        return;
+    }
+
+    $lineCount = 0;
+    $fh = fopen($logFile, 'r');
+    if ($fh === false) {
+        return;
+    }
+    while (fgets($fh) !== false) {
+        $lineCount++;
+    }
+    fclose($fh);
+
+    if ($lineCount < $maxLines) {
+        return;
+    }
+
+    $oldest = $logFile . '.' . $keep;
+    if (is_file($oldest)) {
+        unlink($oldest);
+    }
+
+    for ($i = $keep - 1; $i >= 1; $i--) {
+        $from = $logFile . '.' . $i;
+        $to = $logFile . '.' . ($i + 1);
+        if (is_file($from)) {
+            rename($from, $to);
+        }
+    }
+
+    if (is_file($logFile)) {
+        rename($logFile, $logFile . '.1');
+    }
+}
+
 function log_write($txt, $level = 'info') {
     if (!defined('LOG_ENABLE') || LOG_ENABLE === false) {
         return;
@@ -169,7 +213,6 @@ function log_write($txt, $level = 'info') {
         $level        = strtoupper($level);
         $log_level    = (defined('LOG_LEVEL')  ? strtoupper(LOG_LEVEL) : 'INFO');
         $log_file     = (defined('LOG_FILE')   ? LOG_FILE      : 'api.log');
-        $log_maxlines = (defined('LOG_MAXLINES') ? LOG_MAXLINES: 1000);
 
         if (!in_array($log_level, array_keys(LOG_LEVELS))) {
             die(err("You have specified a LOG_LEVEL that doesn't exist in the LOG_LEVELS array: ".$log_level." not in ".implode(', ', array_keys(LOG_LEVELS))));
@@ -182,59 +225,36 @@ function log_write($txt, $level = 'info') {
             return;
         }
 
+        rotateLogFileIfNeeded($log_file);
+
         if (!file_exists($log_file)) {
-            touch($log_file);
-            $testwrite = file_put_contents($log_file, 'Testing write access');
-    
-            if (!$testwrite && !file_exists($log_file)) {
+            $dir = dirname($log_file);
+            if ($dir !== '.' && $dir !== '' && !is_dir($dir) && !mkdir($dir, 0750, true) && !is_dir($dir)) {
+                die(err("Unable to create log directory: $dir"));
+            }
+            $testwrite = file_put_contents($log_file, '');
+            if ($testwrite === false && !is_file($log_file)) {
                 die(err("Function log_write was unable to write to log. Check the permissions of the log file: $log_file"));
             }
-    
-            unlink($log_file);
-            $currLog = "Logfile created at ".date('Y-m-d H:i:s')."\n";
-        } else {
-            $padding   = max(array_map('strlen', LOG_LEVELS));
-            $plevel    = str_pad("[$level] ", $padding, ' ');
-            $prefix    = $plevel." ".userIP().": ";
-
-            $lines     = file($log_file);
-            $remainder = $log_maxlines - count($lines);
-            $currLine  = 0;
-            while ($remainder < 0) {
-                unset($lines[$currLine]);
-                $currLine++;
-                $remainder++;
-            }
-            
-            // Reconstruct log from remaining lines
-            $currLog = implode('', $lines);
-
-            // $fh      = fopen($log_file, 'w+');
-            // $currLog = fread($fh);
-            // $lines   = 0;
-            // while (!feof($fh)) {
-            //     $line = fgets($fh);
-            //     $lines++;
-            // }
-            // while ($log_maxlines - $lines > 0) {
-                
-            //     $lines--;
-            // }
         }
+
+        $padding   = max(array_map('strlen', LOG_LEVELS));
+        $plevel    = str_pad("[$level] ", $padding, ' ');
+        $prefix    = date('Y-m-d H:i:s') . ' ' . $plevel . userIP() . ': ';
 
         // Security: Sanitize log message to prevent log injection attacks
-        // Remove newlines and other control characters that could be used to forge log entries
         $sanitized_txt = str_replace(["\n", "\r", "\0"], ' ', $txt);
-        
-        $writeLog = $currLog.$prefix.$sanitized_txt."\n";
+        $line = $prefix . $sanitized_txt . "\n";
 
-        $fh = fopen($log_file, 'w+');
-        // Security: Use flock to prevent race conditions
+        $fh = fopen($log_file, 'a');
+        if ($fh === false) {
+            die(err("Unable to open log file for writing: $log_file"));
+        }
         if (flock($fh, LOCK_EX)) {
-            fwrite($fh, $writeLog);
+            fwrite($fh, $line);
             flock($fh, LOCK_UN);
         }
-        fh_close($fh);
+        fclose($fh);
         return;
     } catch(Throwable $t) {
         die(err("Unable to write to log: $t"));

@@ -55,6 +55,8 @@ try {
         "LOG_ENABLE"           => True,
         "LOG_FILE"             => 'api.log',
         "LOG_LEVEL"            => 'info',
+        "LOG_MAXLINES"         => 1000,
+        "LOG_ROTATE_KEEP"      => 5,
         "LOG_LEVELS"           => [
             'WARNING' => 10,
             'INFO'    => 20,
