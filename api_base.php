@@ -545,16 +545,16 @@ function callFunction(string $func, array $params = []) {
             }
 
         } else {
-            # Open endpoint: use default options so cooldown/logging checks don't break
-            $apikey_options = defined('APIKEY_DEFAULT_OPTIONS') ? APIKEY_DEFAULT_OPTIONS : [];
-            $GLOBALS['apikey_logging'] = !empty($apikey_options['log_write']);
+            # Open endpoint: merge defaults so cooldown/logging checks have all keys
+            $apikey_options = ApiKeyStore::mergeDefaultOptions([]);
+            $GLOBALS['apikey_logging'] = (bool) ($apikey_options['log_write'] ?? false);
             $valid_apikey = null;
         }
         /* ────────────────────────────────────────────────────────────────────────── */
 
         $paramsClean = [];
         foreach ($params as $paramName => $paramValue) {
-                if (!in_array($paramName, GLOBAL_PARAMS)) {
+                if (!in_array($paramName, globalParamsList(), true)) {
                     $paramsClean[$paramName] = $paramValue;
                 }
         }
@@ -567,7 +567,7 @@ function callFunction(string $func, array $params = []) {
             $paramsCleanCount       = count($paramsClean);
             $secondsSinceLastCalled = secondsSinceLastCalled($func, $valid_apikey);
             
-            if ($secondsSinceLastCalled === false && $apikey_options['noTimeOut'] === false) {
+            if ($secondsSinceLastCalled === false && ($apikey_options['noTimeOut'] ?? false) === false) {
                 die(err("Function secondsSinceLastCalled() failed. Please stop spamming this API.", 403));
             }
 
@@ -593,7 +593,7 @@ function callFunction(string $func, array $params = []) {
 
         # Error: Too quick!
         $cooldown = (int) ($apikey_options['cooldown'] ?? COOLDOWN_TIME);
-        if ($secondsSinceLastCalled < $cooldown && $apikey_options['noTimeOut'] === false) {
+        if ($secondsSinceLastCalled < $cooldown && ($apikey_options['noTimeOut'] ?? false) === false) {
             return err(funnyResponse(
                 'COOLDOWN', [
                     'endpoint' => $func,
@@ -612,7 +612,11 @@ function callFunction(string $func, array $params = []) {
         }
 
         if (NOTIFY_API === true) {
-            if (!empty($valid_apikey) && !empty(API_KEYS[$valid_apikey]["options"]["notify"])) {
+            $notify = false;
+            if (!empty($valid_apikey) && isset(API_KEYS[$valid_apikey]['options']['notify'])) {
+                $notify = API_KEYS[$valid_apikey]['options']['notify'] === true;
+            }
+            if (!empty($valid_apikey) && $notify) {
                 api_sms(NOTIFY_NUMBER, "API Called by $valid_apikey: $params[endpoint]");
             } elseif (empty($valid_apikey)) {
                 api_sms(NOTIFY_NUMBER, "API Called by ".userIP().": $params[endpoint]");

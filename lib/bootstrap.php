@@ -79,3 +79,13 @@ function redactSensitiveParams(array $params): array
     }
     return $redacted;
 }
+
+/** @return list<string> */
+function globalParamsList(): array
+{
+    if (defined('GLOBAL_PARAMS') && is_array(GLOBAL_PARAMS)) {
+        return GLOBAL_PARAMS;
+    }
+
+    return ['apikey', 'endpoint', 'filter', 'filterdata', 'clean', 'compact', 'verbose'];
+}
