@@ -26,6 +26,7 @@ final class CallFunctionTest extends TestCase
             'log_write' => false,
             'noTimeOut' => true,
             'cooldown' => 1,
+            'sleep' => 0,
         ]);
 
         self::$store->create('cfcool', 'cool-secret', [
@@ -33,6 +34,7 @@ final class CallFunctionTest extends TestCase
             'log_write' => false,
             'noTimeOut' => false,
             'cooldown' => 1,
+            'sleep' => 0,
         ]);
 
         if (!defined('API_KEYS')) {
@@ -44,6 +46,7 @@ final class CallFunctionTest extends TestCase
                         'log_write' => false,
                         'noTimeOut' => true,
                         'cooldown' => 1,
+                        'sleep' => 0,
                     ]),
                 ],
                 'cfcool' => [
@@ -53,6 +56,7 @@ final class CallFunctionTest extends TestCase
                         'log_write' => false,
                         'noTimeOut' => false,
                         'cooldown' => 1,
+                        'sleep' => 0,
                     ]),
                 ],
             ]);
@@ -93,11 +97,6 @@ final class CallFunctionTest extends TestCase
 
     public function testCooldownBlocksRapidRepeat(): void
     {
-        ensureLastCalledJsonFile();
-        $lf = json_decode((string) file_get_contents(LAST_CALLED_JSON), true) ?: [];
-        $lf['api_cf_protected']['cfcool'] = time() - 60;
-        file_put_contents(LAST_CALLED_JSON, json_encode($lf));
-
         $params = [
             'endpoint' => 'cf_protected',
             'apikey' => 'cool-secret',

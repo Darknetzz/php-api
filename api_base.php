@@ -547,7 +547,7 @@ function callFunction(string $func, array $params = []) {
             $paramsCleanCount       = count($paramsClean);
             $secondsSinceLastCalled = secondsSinceLastCalled($func, $valid_apikey);
             
-            if (!$secondsSinceLastCalled && $apikey_options['noTimeOut'] === false) {
+            if ($secondsSinceLastCalled === false && $apikey_options['noTimeOut'] === false) {
                 die(err("Function secondsSinceLastCalled() failed. Please stop spamming this API.", 403));
             }
 
