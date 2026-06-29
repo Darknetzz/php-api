@@ -168,7 +168,7 @@ function keysGuiValidName(string $name): bool
     return $name !== '' && strlen($name) <= 64 && (bool) preg_match('/^[\p{L}\p{N}_\- ]+$/u', $name);
 }
 
-function keysGuiRenderPage(string $title, string $body): void
+function keysGuiRenderPage(string $title, string $body, bool $openEditModal = false, string $modal = ''): void
 {
     ?>
 <!DOCTYPE html>
@@ -202,6 +202,7 @@ function keysGuiRenderPage(string $title, string $body): void
     <div class="container pt-5 pb-5">
         <?= $body ?>
     </div>
+    <?= $modal ?>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var instances = {};
@@ -210,6 +211,7 @@ function keysGuiRenderPage(string $title, string $body): void
                     plugins: ['remove_button'],
                     maxItems: null,
                     placeholder: 'Select endpoints...',
+                    dropdownParent: 'body',
                 });
             });
 
@@ -227,6 +229,18 @@ function keysGuiRenderPage(string $title, string $body): void
                 checkbox.addEventListener('change', sync);
                 sync();
             });
+
+            var modalEl = document.getElementById('editKeyModal');
+            if (modalEl) {
+                modalEl.addEventListener('hidden.bs.modal', function () {
+                    if (window.location.search.indexOf('edit=') !== -1) {
+                        window.location.href = 'api_keys_gui.php';
+                    }
+                });
+                <?php if ($openEditModal): ?>
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                <?php endif; ?>
+            }
         });
     </script>
 </body>
@@ -375,7 +389,8 @@ if ($flash !== null) {
     $flashHtml = '<div class="alert alert-' . keysGuiH($flash['type']) . '">' . $flash['message'] . '</div>';
 }
 
-$editCardHtml = '';
+$editModalHtml = '';
+$openEditModal = false;
 if ($editKey !== null) {
     $allowed = $editKey['options']['allowedEndpoints'] ?? ['*'];
     if (!is_array($allowed)) {
@@ -384,29 +399,35 @@ if ($editKey !== null) {
     $allEndpoints = in_array('*', $allowed, true);
     $endpointOptions = keysGuiMergeEndpointLists($availableEndpoints, $allowed);
     $editEndpointsField = keysGuiRenderEndpointsField('edit', $endpointOptions, $allowed, $allEndpoints);
-    $editCardHtml = '
-    <div class="card mb-4 border-primary">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="card-title mb-0">Edit key</h3>
-            <a href="api_keys_gui.php" class="btn btn-sm btn-outline-secondary">Cancel</a>
-        </div>
-        <div class="card-body">
-            <form method="post" class="row g-3">
-                <input type="hidden" name="csrf" value="' . keysGuiH($csrf) . '">
-                <input type="hidden" name="action" value="update">
-                <input type="hidden" name="old_name" value="' . keysGuiH($editKey['name']) . '">
-                <div class="col-md-4">
-                    <label class="form-label" for="edit_name">Name</label>
-                    <input type="text" class="form-control" id="edit_name" name="name" required maxlength="64" value="' . keysGuiH($editKey['name']) . '">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Allowed endpoints</label>
-                    ' . $editEndpointsField . '
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">Save</button>
-                </div>
-            </form>
+    $openEditModal = true;
+    $editModalHtml = '
+    <div class="modal fade" id="editKeyModal" tabindex="-1" aria-labelledby="editKeyModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <form method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editKeyModalLabel">Edit key</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="csrf" value="' . keysGuiH($csrf) . '">
+                        <input type="hidden" name="action" value="update">
+                        <input type="hidden" name="old_name" value="' . keysGuiH($editKey['name']) . '">
+                        <div class="mb-3">
+                            <label class="form-label" for="edit_name">Name</label>
+                            <input type="text" class="form-control" id="edit_name" name="name" required maxlength="64" value="' . keysGuiH($editKey['name']) . '">
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label">Allowed endpoints</label>
+                            ' . $editEndpointsField . '
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>';
 }
@@ -463,7 +484,6 @@ keysGuiRenderPage('API Keys', '
         </div>
     </div>
     ' . $flashHtml . '
-    ' . $editCardHtml . '
     <div class="card mb-4">
         <div class="card-header"><h3 class="card-title mb-0">Create key</h3></div>
         <div class="card-body">
@@ -509,4 +529,4 @@ keysGuiRenderPage('API Keys', '
             </table>
         </div>
     </div>
-');
+', $openEditModal, $editModalHtml);
