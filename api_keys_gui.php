@@ -280,19 +280,27 @@ function keysGuiRenderPage(string $title, string $body, bool $openEditModal = fa
     <?= $modal ?>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            var bs = window.bootstrap || (window.tabler && window.tabler.bootstrap);
             var instances = {};
-            document.querySelectorAll('.keys-endpoints-select').forEach(function (select) {
+
+            function initTomSelect(select) {
+                if (instances[select.id]) {
+                    return instances[select.id];
+                }
                 instances[select.id] = new TomSelect(select, {
                     plugins: ['remove_button'],
                     maxItems: null,
                     placeholder: 'Select endpoints...',
                     dropdownParent: 'body',
                 });
-            });
+                return instances[select.id];
+            }
 
-            document.querySelectorAll('.keys-all-endpoints').forEach(function (checkbox) {
+            function wireAllEndpointsCheckbox(checkbox) {
                 var ts = instances[checkbox.dataset.target];
-                if (!ts) return;
+                if (!ts) {
+                    return;
+                }
                 var sync = function () {
                     if (checkbox.checked) {
                         ts.clear(true);
@@ -303,19 +311,35 @@ function keysGuiRenderPage(string $title, string $body, bool $openEditModal = fa
                 };
                 checkbox.addEventListener('change', sync);
                 sync();
-            });
+            }
 
             var modalEl = document.getElementById('editKeyModal');
-            if (modalEl) {
+            if (modalEl && bs) {
                 modalEl.addEventListener('hidden.bs.modal', function () {
                     if (window.location.search.indexOf('edit=') !== -1) {
                         window.location.href = 'api_keys_gui.php';
                     }
                 });
+                modalEl.addEventListener('shown.bs.modal', function () {
+                    modalEl.querySelectorAll('.keys-endpoints-select').forEach(initTomSelect);
+                    modalEl.querySelectorAll('.keys-all-endpoints').forEach(wireAllEndpointsCheckbox);
+                }, { once: true });
                 <?php if ($openEditModal): ?>
-                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                bs.Modal.getOrCreateInstance(modalEl).show();
                 <?php endif; ?>
             }
+
+            document.querySelectorAll('.keys-endpoints-select').forEach(function (select) {
+                if (!select.closest('#editKeyModal')) {
+                    initTomSelect(select);
+                }
+            });
+
+            document.querySelectorAll('.keys-all-endpoints').forEach(function (checkbox) {
+                if (!checkbox.closest('#editKeyModal')) {
+                    wireAllEndpointsCheckbox(checkbox);
+                }
+            });
         });
     </script>
 </body>
