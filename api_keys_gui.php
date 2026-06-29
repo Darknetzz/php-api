@@ -74,29 +74,93 @@ function keysGuiFlashGet(): ?array
 }
 
 /** @return list<string> */
-function keysGuiParseEndpoints(string $input): array
+function keysGuiDiscoverEndpoints(): array
 {
-    $input = trim($input);
-    if ($input === '' || $input === '*') {
+    $endpoints = [];
+
+    foreach (glob(__DIR__ . '/endpoints/*.php') ?: [] as $file) {
+        $contents = @file_get_contents($file);
+        if ($contents === false) {
+            continue;
+        }
+        if (preg_match_all('/function\s+(api_[a-zA-Z0-9_]+)\s*\(/', $contents, $matches)) {
+            foreach ($matches[1] as $func) {
+                $endpoints[preg_replace('/^api_/', '', $func)] = true;
+            }
+        }
+    }
+
+    $list = array_keys($endpoints);
+    sort($list, SORT_NATURAL | SORT_FLAG_CASE);
+
+    return $list;
+}
+
+/** @param list<string> $available @param list<string> $selected */
+function keysGuiMergeEndpointLists(array $available, array $selected): array
+{
+    $extra = array_values(array_filter($selected, static fn(string $ep): bool => $ep !== '*'));
+    $merged = array_values(array_unique(array_merge($available, $extra)));
+    sort($merged, SORT_NATURAL | SORT_FLAG_CASE);
+
+    return $merged;
+}
+
+/** @return list<string> */
+function keysGuiParseEndpointsFromRequest(string $prefix): array
+{
+    $allKey = $prefix . '_all_endpoints';
+    $listKey = $prefix . '_endpoints';
+
+    if (!empty($_POST[$allKey])) {
         return ['*'];
     }
 
-    $parts = array_values(array_filter(
-        array_map('trim', explode(',', $input)),
-        static fn(string $part): bool => $part !== ''
-    ));
-
-    return $parts === [] ? ['*'] : $parts;
-}
-
-/** @param list<string> $allowed */
-function keysGuiFormatEndpoints(array $allowed): string
-{
-    if (in_array('*', $allowed, true)) {
-        return '*';
+    $selected = $_POST[$listKey] ?? [];
+    if (!is_array($selected)) {
+        $selected = [$selected];
     }
 
-    return implode(', ', $allowed);
+    $endpoints = [];
+    foreach ($selected as $ep) {
+        $ep = trim((string) $ep);
+        if ($ep === '' || $ep === '*') {
+            continue;
+        }
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $ep)) {
+            return [];
+        }
+        $endpoints[] = $ep;
+    }
+
+    return $endpoints === [] ? ['*'] : array_values(array_unique($endpoints));
+}
+
+/** @param list<string> $available @param list<string> $selected */
+function keysGuiRenderEndpointsField(string $prefix, array $available, array $selected, bool $allEndpoints): string
+{
+    $selectId = $prefix . '_endpoints';
+    $allName = $prefix . '_all_endpoints';
+    $listName = $prefix . '_endpoints[]';
+    $selectedSet = array_flip($selected);
+    $optionsHtml = '';
+
+    foreach ($available as $ep) {
+        $isSelected = !$allEndpoints && isset($selectedSet[$ep]);
+        $optionsHtml .= '<option value="' . keysGuiH($ep) . '"' . ($isSelected ? ' selected' : '') . '>' . keysGuiH($ep) . '</option>';
+    }
+
+    $selectDisabled = $allEndpoints ? ' disabled' : '';
+
+    return '
+        <label class="form-check mb-2">
+            <input type="checkbox" class="form-check-input keys-all-endpoints" data-target="' . keysGuiH($selectId) . '" name="' . keysGuiH($allName) . '" value="1"' . ($allEndpoints ? ' checked' : '') . '>
+            <span class="form-check-label">All endpoints (<code>*</code>)</span>
+        </label>
+        <select class="form-select keys-endpoints-select" id="' . keysGuiH($selectId) . '" name="' . keysGuiH($listName) . '" multiple size="10"' . $selectDisabled . '>
+            ' . $optionsHtml . '
+        </select>
+        <div class="form-text text-secondary">Hold Ctrl/Cmd to select multiple. Empty selection defaults to all endpoints.</div>';
 }
 
 function keysGuiValidName(string $name): bool
@@ -119,12 +183,27 @@ function keysGuiRenderPage(string $title, string $body): void
         .badge.keys-status-enabled { background-color: #2fb344; color: #fff !important; }
         .badge.keys-status-disabled { background-color: #626976; color: #fff !important; }
         .badge.keys-endpoints-all { background-color: #2fb344; color: #fff !important; font-weight: 600; }
+        .keys-endpoints-select { min-height: 12rem; }
     </style>
 </head>
 <body data-bs-theme="dark">
     <div class="container pt-5 pb-5">
         <?= $body ?>
     </div>
+    <script>
+        document.querySelectorAll('.keys-all-endpoints').forEach(function (checkbox) {
+            var select = document.getElementById(checkbox.dataset.target);
+            if (!select) return;
+            var sync = function () {
+                select.disabled = checkbox.checked;
+                if (checkbox.checked) {
+                    Array.from(select.options).forEach(function (opt) { opt.selected = false; });
+                }
+            };
+            checkbox.addEventListener('change', sync);
+            sync();
+        });
+    </script>
 </body>
 </html>
     <?php
@@ -173,15 +252,17 @@ if ($authenticated && $_SERVER['REQUEST_METHOD'] === 'POST' && keysGuiValidateCs
 
     if ($action === 'create') {
         $name = trim((string) ($_POST['name'] ?? ''));
-        $endpoint = trim((string) ($_POST['endpoint'] ?? ''));
+        $allowedEndpoints = keysGuiParseEndpointsFromRequest('create');
         $noTimeout = isset($_POST['no_timeout']);
 
-        if (!keysGuiValidName($name)) {
+        if ($allowedEndpoints === []) {
+            keysGuiFlashSet('danger', 'Invalid endpoint selection.');
+        } elseif (!keysGuiValidName($name)) {
             keysGuiFlashSet('danger', 'Invalid key name. Use letters, numbers, underscores, and hyphens only.');
         } elseif ($store->exists($name)) {
             keysGuiFlashSet('danger', "Key name already exists: $name");
         } else {
-            $options = ['allowedEndpoints' => keysGuiParseEndpoints($endpoint)];
+            $options = ['allowedEndpoints' => $allowedEndpoints];
             if ($noTimeout) {
                 $options['noTimeOut'] = true;
             }
@@ -196,9 +277,13 @@ if ($authenticated && $_SERVER['REQUEST_METHOD'] === 'POST' && keysGuiValidateCs
     if ($action === 'update') {
         $oldName = trim((string) ($_POST['old_name'] ?? ''));
         $newName = trim((string) ($_POST['name'] ?? ''));
-        $endpoints = trim((string) ($_POST['endpoints'] ?? ''));
+        $allowedEndpoints = keysGuiParseEndpointsFromRequest('edit');
 
-        if (!keysGuiValidName($oldName) || !$store->exists($oldName)) {
+        if ($allowedEndpoints === []) {
+            keysGuiFlashSet('danger', 'Invalid endpoint selection.');
+            header('Location: api_keys_gui.php?edit=' . rawurlencode($oldName));
+            exit;
+        } elseif (!keysGuiValidName($oldName) || !$store->exists($oldName)) {
             keysGuiFlashSet('danger', 'Key not found.');
         } elseif (!keysGuiValidName($newName)) {
             keysGuiFlashSet('danger', 'Invalid key name. Use letters, numbers, underscores, and hyphens only.');
@@ -206,7 +291,7 @@ if ($authenticated && $_SERVER['REQUEST_METHOD'] === 'POST' && keysGuiValidateCs
             keysGuiFlashSet('danger', "Key name already exists: $newName");
         } else {
             try {
-                $store->updateKey($oldName, $newName, keysGuiParseEndpoints($endpoints));
+                $store->updateKey($oldName, $newName, $allowedEndpoints);
                 keysGuiFlashSet('success', 'Updated key: <strong>' . keysGuiH($newName) . '</strong>');
                 header('Location: api_keys_gui.php');
                 exit;
@@ -256,6 +341,7 @@ $store = ApiKeyStore::createFromConfig();
 $keys = $store->listDetailed();
 $flash = keysGuiFlashGet();
 $csrf = keysGuiCsrfToken();
+$availableEndpoints = keysGuiDiscoverEndpoints();
 $editName = trim((string) ($_GET['edit'] ?? ''));
 $editKey = $editName !== '' ? $store->getByName($editName) : null;
 
@@ -267,7 +353,12 @@ if ($flash !== null) {
 $editCardHtml = '';
 if ($editKey !== null) {
     $allowed = $editKey['options']['allowedEndpoints'] ?? ['*'];
-    $endpointsValue = keysGuiH(keysGuiFormatEndpoints(is_array($allowed) ? $allowed : ['*']));
+    if (!is_array($allowed)) {
+        $allowed = ['*'];
+    }
+    $allEndpoints = in_array('*', $allowed, true);
+    $endpointOptions = keysGuiMergeEndpointLists($availableEndpoints, $allowed);
+    $editEndpointsField = keysGuiRenderEndpointsField('edit', $endpointOptions, $allowed, $allEndpoints);
     $editCardHtml = '
     <div class="card mb-4 border-primary">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -284,9 +375,8 @@ if ($editKey !== null) {
                     <input type="text" class="form-control" id="edit_name" name="name" required maxlength="64" value="' . keysGuiH($editKey['name']) . '">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label" for="edit_endpoints">Allowed endpoints</label>
-                    <input type="text" class="form-control" id="edit_endpoints" name="endpoints" value="' . $endpointsValue . '" placeholder="* or comma-separated, e.g. datetime, faker">
-                    <div class="form-text text-secondary">Use <code>*</code> for all endpoints, or list names separated by commas.</div>
+                    <label class="form-label">Allowed endpoints</label>
+                    ' . $editEndpointsField . '
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">Save</button>
@@ -295,6 +385,8 @@ if ($editKey !== null) {
         </div>
     </div>';
 }
+
+$createEndpointsField = keysGuiRenderEndpointsField('create', $availableEndpoints, [], true);
 
 $rowsHtml = '';
 foreach ($keys as $key) {
@@ -353,21 +445,21 @@ keysGuiRenderPage('API Keys', '
             <form method="post" class="row g-3">
                 <input type="hidden" name="csrf" value="' . keysGuiH($csrf) . '">
                 <input type="hidden" name="action" value="create">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label" for="name">Name</label>
                     <input type="text" class="form-control" id="name" name="name" required placeholder="my_key" maxlength="64">
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="endpoint">Allowed endpoints <span class="text-secondary">(optional)</span></label>
-                    <input type="text" class="form-control" id="endpoint" name="endpoint" placeholder="* or datetime, faker">
+                <div class="col-md-5">
+                    <label class="form-label">Allowed endpoints</label>
+                    ' . $createEndpointsField . '
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
+                <div class="col-md-2 d-flex align-items-end pb-4">
                     <label class="form-check">
                         <input type="checkbox" class="form-check-input" name="no_timeout" id="no_timeout">
                         <span class="form-check-label">No timeout</span>
                     </label>
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
+                <div class="col-md-2 d-flex align-items-end pb-4">
                     <button type="submit" class="btn btn-primary w-100">Create</button>
                 </div>
             </form>
