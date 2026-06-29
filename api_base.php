@@ -626,38 +626,94 @@ function ensureLastCalledJsonFile(): string
         die(err('Unable to create last-called directory: ' . $dir));
     }
     if (!file_exists($path)) {
-        touch($path);
+        file_put_contents($path, '{}');
     }
 
     return $path;
 }
 
-function secondsSinceLastCalled($function_name, $valid_apikey = null) {
-    try {
+/** @return array<string, mixed> */
+function readLastCalledStore(): array
+{
+    ensureLastCalledJsonFile();
+    $path = LAST_CALLED_JSON;
 
-        ensureLastCalledJsonFile();
-        $path = LAST_CALLED_JSON;
+    $fh = fopen($path, 'r');
+    if (!$fh) {
+        die(err('Unable to open last called file for reading'));
+    }
 
-        // Security: Add file locking for reading to prevent race conditions
-        $fh = fopen($path, 'r');
-        if (!$fh) {
-            die(err("Unable to open last called file for reading"));
-        }
-        
-        if (flock($fh, LOCK_SH)) {
-            $json_contents = stream_get_contents($fh);
-            flock($fh, LOCK_UN);
-        } else {
-            fclose($fh);
-            die(err("Unable to acquire lock on last called file"));
-        }
+    if (!flock($fh, LOCK_SH)) {
         fclose($fh);
-        
-        // Security: Validate JSON decode
+        die(err('Unable to acquire lock on last called file'));
+    }
+
+    $json_contents = stream_get_contents($fh);
+    flock($fh, LOCK_UN);
+    fclose($fh);
+
+    if ($json_contents === false || $json_contents === '') {
+        return [];
+    }
+
+    $lf = validate_json_decode($json_contents);
+    if ($lf === null) {
+        log_write('Invalid JSON in last called file; treating as empty.', 'warning');
+        return [];
+    }
+
+    return $lf;
+}
+
+/** @param callable(array<string, mixed>): void $mutator */
+function mutateLastCalledStore(callable $mutator): void
+{
+    ensureLastCalledJsonFile();
+    $path = LAST_CALLED_JSON;
+
+    $fh = fopen($path, 'c+');
+    if (!$fh) {
+        die(err('Unable to open last called file for writing'));
+    }
+
+    if (!flock($fh, LOCK_EX)) {
+        fclose($fh);
+        die(err('Unable to acquire lock on last called file'));
+    }
+
+    $json_contents = stream_get_contents($fh);
+    if ($json_contents === false || $json_contents === '') {
+        $lf = [];
+    } else {
         $lf = validate_json_decode($json_contents);
         if ($lf === null) {
-            die(err("Invalid JSON in last called file"));
+            log_write('Invalid JSON in last called file; resetting store.', 'warning');
+            $lf = [];
         }
+    }
+
+    $mutator($lf);
+
+    $encoded = json_encode($lf, JSON_THROW_ON_ERROR);
+    ftruncate($fh, 0);
+    rewind($fh);
+    fwrite($fh, $encoded);
+    fflush($fh);
+    flock($fh, LOCK_UN);
+    fclose($fh);
+}
+
+/** @param array<string, mixed> $lf */
+function writeLastCalledStore(array $lf): void
+{
+    mutateLastCalledStore(static function (array &$store) use ($lf): void {
+        $store = $lf;
+    });
+}
+
+function secondsSinceLastCalled($function_name, $valid_apikey = null) {
+    try {
+        $lf = readLastCalledStore();
         
         # This endpoint is open
         if (endpoint_open($function_name) || $valid_apikey == null) {
@@ -680,8 +736,6 @@ function secondsSinceLastCalled($function_name, $valid_apikey = null) {
         return time() - $lastcalled;
 
     } catch (Throwable $t) {
-        # This should not return false, makes it incredibly hard to troubleshoot permission error.
-        // return false;
         die(err($t));
     }
 }
@@ -691,60 +745,21 @@ function secondsSinceLastCalled($function_name, $valid_apikey = null) {
 /* ────────────────────────────────────────────────────────────────────────── */
 function updateLastCalled($function_name, $valid_apikey = null) {
     try {
-
-        ensureLastCalledJsonFile();
-        $path = LAST_CALLED_JSON;
-
-        // Security: Read with shared lock
-        $fh_read = fopen($path, 'r');
-        if (!$fh_read) {
-            die(err("Unable to open last called file for reading"));
+        $resolvedKey = $valid_apikey;
+        if (endpoint_open($function_name) || $resolvedKey == null) {
+            $resolvedKey = userIP();
         }
-        
-        if (flock($fh_read, LOCK_SH)) {
-            $json_contents = stream_get_contents($fh_read);
-            flock($fh_read, LOCK_UN);
-        } else {
-            fclose($fh_read);
-            die(err("Unable to acquire lock on last called file"));
-        }
-        fclose($fh_read);
 
-        # Create empty array if file empty
-        if (empty($json_contents)) {
-            $lf = [];
-        } else {
-            // Security: Validate JSON decode
-            $lf = validate_json_decode($json_contents, false);
-            if ($lf === null) {
-                die(err("Invalid JSON in last called file"));
+        if (empty($resolvedKey)) {
+            die(err("updateLastCalled: This endpoint is either not open, or the api key you provided is null/invalid. IP: ".userIP()." - Name: $resolvedKey"));
+        }
+
+        mutateLastCalledStore(static function (array &$lf) use ($function_name, $resolvedKey): void {
+            if (!var_assert($lf[$function_name])) {
+                $lf[$function_name] = [];
             }
-        }
-
-        # If function array doesn't exists in JSON file, create it
-        if (!var_assert($lf[$function_name])) {
-            $lf[$function_name] = [];
-        }
-
-        # This endpoint is open
-        if (endpoint_open($function_name) || $valid_apikey == null) {
-            $valid_apikey = userIP();
-        }
-
-        # Somehow the valid_apikey is still empty
-        if (empty($valid_apikey)) {
-            die(err("updateLastCalled: This endpoint is either not open, or the api key you provided is null/invalid. IP: ".userIP()." - Name: $valid_apikey"));
-        }
-
-        $lf[$function_name][$valid_apikey] = time();
-
-        $fh = fopen(LAST_CALLED_JSON, 'w+');
-        // Security: Use flock to prevent race conditions
-        if (flock($fh, LOCK_EX)) {
-            fwrite($fh, json_encode($lf));
-            flock($fh, LOCK_UN);
-        }
-        fh_close($fh);
+            $lf[$function_name][$resolvedKey] = time();
+        });
 
         return true;
 
