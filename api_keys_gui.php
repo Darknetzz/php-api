@@ -157,10 +157,10 @@ function keysGuiRenderEndpointsField(string $prefix, array $available, array $se
             <input type="checkbox" class="form-check-input keys-all-endpoints" data-target="' . keysGuiH($selectId) . '" name="' . keysGuiH($allName) . '" value="1"' . ($allEndpoints ? ' checked' : '') . '>
             <span class="form-check-label">All endpoints (<code>*</code>)</span>
         </label>
-        <select class="form-select keys-endpoints-select" id="' . keysGuiH($selectId) . '" name="' . keysGuiH($listName) . '" multiple size="10"' . $selectDisabled . '>
+        <select class="form-select keys-endpoints-select" id="' . keysGuiH($selectId) . '" name="' . keysGuiH($listName) . '" multiple' . $selectDisabled . '>
             ' . $optionsHtml . '
         </select>
-        <div class="form-text text-secondary">Hold Ctrl/Cmd to select multiple. Empty selection defaults to all endpoints.</div>';
+        <div class="form-text text-secondary">Pick endpoints from the dropdown. Empty selection defaults to all endpoints.</div>';
 }
 
 function keysGuiValidName(string $name): bool
@@ -178,12 +178,24 @@ function keysGuiRenderPage(string $title, string $body): void
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= keysGuiH($title) ?></title>
     <link rel="stylesheet" href="https://ubuntu.roste.org/_assets/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.bootstrap5.min.css">
     <script src="https://ubuntu.roste.org/_assets/tabler.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
     <style>
         .badge.keys-status-enabled { background-color: #2fb344; color: #fff !important; }
         .badge.keys-status-disabled { background-color: #626976; color: #fff !important; }
         .badge.keys-endpoints-all { background-color: #2fb344; color: #fff !important; font-weight: 600; }
-        .keys-endpoints-select { min-height: 12rem; }
+        .keys-endpoints-select + .ts-wrapper { width: 100%; }
+        .ts-wrapper .ts-control { min-height: 2.5rem; }
+        [data-bs-theme="dark"] .ts-wrapper .ts-control,
+        [data-bs-theme="dark"] .ts-wrapper .ts-dropdown {
+            background-color: var(--tblr-bg-forms, #1f2937);
+            border-color: var(--tblr-border-color, #374151);
+            color: var(--tblr-body-color, #e5e7eb);
+        }
+        [data-bs-theme="dark"] .ts-wrapper .ts-dropdown .option.active {
+            background-color: rgba(32, 107, 196, 0.25);
+        }
     </style>
 </head>
 <body data-bs-theme="dark">
@@ -191,17 +203,30 @@ function keysGuiRenderPage(string $title, string $body): void
         <?= $body ?>
     </div>
     <script>
-        document.querySelectorAll('.keys-all-endpoints').forEach(function (checkbox) {
-            var select = document.getElementById(checkbox.dataset.target);
-            if (!select) return;
-            var sync = function () {
-                select.disabled = checkbox.checked;
-                if (checkbox.checked) {
-                    Array.from(select.options).forEach(function (opt) { opt.selected = false; });
-                }
-            };
-            checkbox.addEventListener('change', sync);
-            sync();
+        document.addEventListener('DOMContentLoaded', function () {
+            var instances = {};
+            document.querySelectorAll('.keys-endpoints-select').forEach(function (select) {
+                instances[select.id] = new TomSelect(select, {
+                    plugins: ['remove_button'],
+                    maxItems: null,
+                    placeholder: 'Select endpoints...',
+                });
+            });
+
+            document.querySelectorAll('.keys-all-endpoints').forEach(function (checkbox) {
+                var ts = instances[checkbox.dataset.target];
+                if (!ts) return;
+                var sync = function () {
+                    if (checkbox.checked) {
+                        ts.clear(true);
+                        ts.disable();
+                    } else {
+                        ts.enable();
+                    }
+                };
+                checkbox.addEventListener('change', sync);
+                sync();
+            });
         });
     </script>
 </body>
