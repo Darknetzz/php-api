@@ -3,14 +3,18 @@
 $root = dirname(__DIR__);
 chdir($root);
 
-require_once $root . '/api_settings.php';
-
+// Pin key store to an isolated temp file BEFORE api_settings.php runs.
+// Hostname settings use `if (!defined(...))` so this blocks data/api.db.
+$testDbPath = sys_get_temp_dir() . '/php-api-test-' . getmypid() . '.db';
 if (!defined('KEY_STORE_DRIVER')) {
     define('KEY_STORE_DRIVER', 'sqlite');
 }
 if (!defined('KEY_STORE_DSN')) {
-    define('KEY_STORE_DSN', sys_get_temp_dir() . '/php-api-test-' . getmypid() . '.db');
+    define('KEY_STORE_DSN', $testDbPath);
 }
+
+require_once $root . '/api_settings.php';
+
 if (!defined('APIKEY_DEFAULT_OPTIONS')) {
     define('APIKEY_DEFAULT_OPTIONS', [
         'allowedEndpoints' => ['*'],
@@ -25,4 +29,5 @@ if (!defined('APIKEY_DEFAULT_OPTIONS')) {
 
 require_once $root . '/lib/bootstrap.php';
 
-@unlink(KEY_STORE_DSN);
+// Safe: KEY_STORE_DSN is always the temp path above when tests use this bootstrap.
+@unlink($testDbPath);
