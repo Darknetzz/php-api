@@ -273,6 +273,54 @@ SQL;
         return $row !== null;
     }
 
+    /** @return array{name: string, enabled: bool, options: array<string, mixed>, created_at: string, last_used_at: ?string}|null */
+    public function getByName(string $name): ?array
+    {
+        $row = $this->fetchOne(
+            'SELECT name, options, enabled, created_at, last_used_at FROM api_keys WHERE name = ?',
+            [$name]
+        );
+        if ($row === null) {
+            return null;
+        }
+
+        $options = json_decode($row['options'], true);
+        if (!is_array($options)) {
+            $options = [];
+        }
+
+        return [
+            'name' => $row['name'],
+            'enabled' => (bool) $row['enabled'],
+            'options' => $options,
+            'created_at' => $row['created_at'],
+            'last_used_at' => $row['last_used_at'],
+        ];
+    }
+
+    /** @param list<string> $allowedEndpoints */
+    public function updateKey(string $name, string $newName, array $allowedEndpoints): void
+    {
+        if (!$this->exists($name)) {
+            throw new InvalidArgumentException("Key not found: $name");
+        }
+        if ($newName !== $name && $this->exists($newName)) {
+            throw new InvalidArgumentException("Key name already exists: $newName");
+        }
+
+        $row = $this->fetchOne('SELECT options FROM api_keys WHERE name = ?', [$name]);
+        $options = json_decode($row['options'] ?? '{}', true);
+        if (!is_array($options)) {
+            $options = [];
+        }
+        $options['allowedEndpoints'] = $allowedEndpoints;
+
+        $this->exec(
+            'UPDATE api_keys SET name = ?, options = ? WHERE name = ?',
+            [$newName, json_encode($options, JSON_THROW_ON_ERROR), $name]
+        );
+    }
+
     /** @param array<string, mixed> $options */
     public static function mergeDefaultOptions(array $options): array
     {

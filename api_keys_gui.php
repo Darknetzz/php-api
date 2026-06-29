@@ -73,6 +73,37 @@ function keysGuiFlashGet(): ?array
     return $flash;
 }
 
+/** @return list<string> */
+function keysGuiParseEndpoints(string $input): array
+{
+    $input = trim($input);
+    if ($input === '' || $input === '*') {
+        return ['*'];
+    }
+
+    $parts = array_values(array_filter(
+        array_map('trim', explode(',', $input)),
+        static fn(string $part): bool => $part !== ''
+    ));
+
+    return $parts === [] ? ['*'] : $parts;
+}
+
+/** @param list<string> $allowed */
+function keysGuiFormatEndpoints(array $allowed): string
+{
+    if (in_array('*', $allowed, true)) {
+        return '*';
+    }
+
+    return implode(', ', $allowed);
+}
+
+function keysGuiValidName(string $name): bool
+{
+    return $name !== '' && strlen($name) <= 64 && (bool) preg_match('/^[\p{L}\p{N}_\- ]+$/u', $name);
+}
+
 function keysGuiRenderPage(string $title, string $body): void
 {
     ?>
@@ -84,6 +115,11 @@ function keysGuiRenderPage(string $title, string $body): void
     <title><?= keysGuiH($title) ?></title>
     <link rel="stylesheet" href="https://ubuntu.roste.org/_assets/tabler.min.css">
     <script src="https://ubuntu.roste.org/_assets/tabler.min.js"></script>
+    <style>
+        .badge.keys-status-enabled { background-color: #2fb344; color: #fff !important; }
+        .badge.keys-status-disabled { background-color: #626976; color: #fff !important; }
+        .badge.keys-endpoints-all { background-color: #2fb344; color: #fff !important; font-weight: 600; }
+    </style>
 </head>
 <body data-bs-theme="dark">
     <div class="container pt-5 pb-5">
@@ -140,15 +176,12 @@ if ($authenticated && $_SERVER['REQUEST_METHOD'] === 'POST' && keysGuiValidateCs
         $endpoint = trim((string) ($_POST['endpoint'] ?? ''));
         $noTimeout = isset($_POST['no_timeout']);
 
-        if (!preg_match('/^[a-zA-Z0-9_\-]+$/', $name)) {
+        if (!keysGuiValidName($name)) {
             keysGuiFlashSet('danger', 'Invalid key name. Use letters, numbers, underscores, and hyphens only.');
         } elseif ($store->exists($name)) {
             keysGuiFlashSet('danger', "Key name already exists: $name");
         } else {
-            $options = [];
-            if ($endpoint !== '') {
-                $options['allowedEndpoints'] = [$endpoint];
-            }
+            $options = ['allowedEndpoints' => keysGuiParseEndpoints($endpoint)];
             if ($noTimeout) {
                 $options['noTimeOut'] = true;
             }
@@ -160,9 +193,34 @@ if ($authenticated && $_SERVER['REQUEST_METHOD'] === 'POST' && keysGuiValidateCs
         exit;
     }
 
+    if ($action === 'update') {
+        $oldName = trim((string) ($_POST['old_name'] ?? ''));
+        $newName = trim((string) ($_POST['name'] ?? ''));
+        $endpoints = trim((string) ($_POST['endpoints'] ?? ''));
+
+        if (!keysGuiValidName($oldName) || !$store->exists($oldName)) {
+            keysGuiFlashSet('danger', 'Key not found.');
+        } elseif (!keysGuiValidName($newName)) {
+            keysGuiFlashSet('danger', 'Invalid key name. Use letters, numbers, underscores, and hyphens only.');
+        } elseif ($newName !== $oldName && $store->exists($newName)) {
+            keysGuiFlashSet('danger', "Key name already exists: $newName");
+        } else {
+            try {
+                $store->updateKey($oldName, $newName, keysGuiParseEndpoints($endpoints));
+                keysGuiFlashSet('success', 'Updated key: <strong>' . keysGuiH($newName) . '</strong>');
+                header('Location: api_keys_gui.php');
+                exit;
+            } catch (InvalidArgumentException $e) {
+                keysGuiFlashSet('danger', $e->getMessage());
+            }
+        }
+        header('Location: api_keys_gui.php?edit=' . rawurlencode($oldName));
+        exit;
+    }
+
     if ($action === 'disable') {
         $name = trim((string) ($_POST['name'] ?? ''));
-        if ($name !== '' && preg_match('/^[a-zA-Z0-9_\-]+$/', $name) && $store->exists($name)) {
+        if ($name !== '' && $store->exists($name)) {
             $store->disable($name);
             keysGuiFlashSet('info', 'Disabled key: ' . keysGuiH($name));
         } else {
@@ -198,23 +256,62 @@ $store = ApiKeyStore::createFromConfig();
 $keys = $store->listDetailed();
 $flash = keysGuiFlashGet();
 $csrf = keysGuiCsrfToken();
+$editName = trim((string) ($_GET['edit'] ?? ''));
+$editKey = $editName !== '' ? $store->getByName($editName) : null;
 
 $flashHtml = '';
 if ($flash !== null) {
     $flashHtml = '<div class="alert alert-' . keysGuiH($flash['type']) . '">' . $flash['message'] . '</div>';
 }
 
+$editCardHtml = '';
+if ($editKey !== null) {
+    $allowed = $editKey['options']['allowedEndpoints'] ?? ['*'];
+    $endpointsValue = keysGuiH(keysGuiFormatEndpoints(is_array($allowed) ? $allowed : ['*']));
+    $editCardHtml = '
+    <div class="card mb-4 border-primary">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">Edit key</h3>
+            <a href="api_keys_gui.php" class="btn btn-sm btn-outline-secondary">Cancel</a>
+        </div>
+        <div class="card-body">
+            <form method="post" class="row g-3">
+                <input type="hidden" name="csrf" value="' . keysGuiH($csrf) . '">
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="old_name" value="' . keysGuiH($editKey['name']) . '">
+                <div class="col-md-4">
+                    <label class="form-label" for="edit_name">Name</label>
+                    <input type="text" class="form-control" id="edit_name" name="name" required maxlength="64" value="' . keysGuiH($editKey['name']) . '">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="edit_endpoints">Allowed endpoints</label>
+                    <input type="text" class="form-control" id="edit_endpoints" name="endpoints" value="' . $endpointsValue . '" placeholder="* or comma-separated, e.g. datetime, faker">
+                    <div class="form-text text-secondary">Use <code>*</code> for all endpoints, or list names separated by commas.</div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>';
+}
+
 $rowsHtml = '';
 foreach ($keys as $key) {
     $allowed = $key['options']['allowedEndpoints'] ?? ['*'];
     $allowedStr = is_array($allowed) ? implode(', ', $allowed) : (string) $allowed;
+    $isUnrestricted = is_array($allowed) && in_array('*', $allowed, true);
     $statusBadge = $key['enabled']
-        ? '<span class="badge bg-success">enabled</span>'
-        : '<span class="badge bg-secondary">disabled</span>';
+        ? '<span class="badge keys-status-enabled">enabled</span>'
+        : '<span class="badge keys-status-disabled">disabled</span>';
+    $allowedHtml = $isUnrestricted
+        ? '<span class="badge keys-endpoints-all" title="All endpoints">*</span>'
+        : '<code class="text-secondary">' . keysGuiH($allowedStr) . '</code>';
     $noTimeout = !empty($key['options']['noTimeOut']) ? 'yes' : 'no';
     $lastUsed = $key['last_used_at'] !== null ? keysGuiH($key['last_used_at']) : '<span class="text-secondary">never</span>';
 
     $disableBtn = '';
+    $editBtn = '<a href="api_keys_gui.php?edit=' . rawurlencode($key['name']) . '" class="btn btn-sm btn-outline-primary">Edit</a>';
     if ($key['enabled']) {
         $disableBtn = '
             <form method="post" class="d-inline" onsubmit="return confirm(' . json_encode('Disable key ' . $key['name'] . '?') . ');">
@@ -225,14 +322,14 @@ foreach ($keys as $key) {
             </form>';
     }
 
-    $rowsHtml .= '<tr>
+    $rowsHtml .= '<tr' . ($editKey !== null && $editKey['name'] === $key['name'] ? ' class="table-active"' : '') . '>
         <td><strong>' . keysGuiH($key['name']) . '</strong></td>
         <td>' . $statusBadge . '</td>
-        <td><code>' . keysGuiH($allowedStr) . '</code></td>
+        <td>' . $allowedHtml . '</td>
         <td>' . keysGuiH($noTimeout) . '</td>
         <td class="text-secondary">' . keysGuiH($key['created_at']) . '</td>
         <td class="text-secondary">' . $lastUsed . '</td>
-        <td>' . $disableBtn . '</td>
+        <td class="text-nowrap">' . $editBtn . ' ' . $disableBtn . '</td>
     </tr>';
 }
 
@@ -249,6 +346,7 @@ keysGuiRenderPage('API Keys', '
         </div>
     </div>
     ' . $flashHtml . '
+    ' . $editCardHtml . '
     <div class="card mb-4">
         <div class="card-header"><h3 class="card-title mb-0">Create key</h3></div>
         <div class="card-body">
@@ -257,11 +355,11 @@ keysGuiRenderPage('API Keys', '
                 <input type="hidden" name="action" value="create">
                 <div class="col-md-4">
                     <label class="form-label" for="name">Name</label>
-                    <input type="text" class="form-control" id="name" name="name" pattern="[a-zA-Z0-9_\\-]+" required placeholder="my_key">
+                    <input type="text" class="form-control" id="name" name="name" required placeholder="my_key" maxlength="64">
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label" for="endpoint">Restrict to endpoint <span class="text-secondary">(optional)</span></label>
-                    <input type="text" class="form-control" id="endpoint" name="endpoint" placeholder="* = unrestricted if empty">
+                    <label class="form-label" for="endpoint">Allowed endpoints <span class="text-secondary">(optional)</span></label>
+                    <input type="text" class="form-control" id="endpoint" name="endpoint" placeholder="* or datetime, faker">
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
                     <label class="form-check">

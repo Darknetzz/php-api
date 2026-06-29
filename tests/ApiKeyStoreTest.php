@@ -83,4 +83,26 @@ final class ApiKeyStoreTest extends TestCase
         $this->assertSame(ApiKeyStore::hashKey('my-key'), $hash);
         $this->assertNotSame(ApiKeyStore::hashKey('other'), $hash);
     }
+
+    public function testUpdateKeyRenameAndEndpoints(): void
+    {
+        $this->store->create('alpha', 'key-alpha', ['allowedEndpoints' => ['datetime'], 'noTimeOut' => true]);
+        $this->store->updateKey('alpha', 'alpha-renamed', ['faker', 'datetime']);
+
+        $this->assertNull($this->store->getByName('alpha'));
+        $row = $this->store->getByName('alpha-renamed');
+        $this->assertNotNull($row);
+        $this->assertSame(['faker', 'datetime'], $row['options']['allowedEndpoints']);
+        $this->assertTrue($row['options']['noTimeOut']);
+        $this->assertSame('alpha-renamed', $this->store->validate('key-alpha'));
+    }
+
+    public function testUpdateKeyRejectsDuplicateName(): void
+    {
+        $this->store->create('alpha', 'key-alpha');
+        $this->store->create('beta', 'key-beta');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->store->updateKey('alpha', 'beta', ['*']);
+    }
 }
