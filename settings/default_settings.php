@@ -22,6 +22,21 @@ try {
         "CUSTOM_INDEX_NOPARAMS"        => "custom_index.php",
 
         /* ───────────────────────────────────────────────────────────────────── */
+        /*                           Security / GUI / Key store                  */
+        /* ───────────────────────────────────────────────────────────────────── */
+        "TRUST_PROXY"                  => False,
+        "ALLOW_PRIVATE_IPS"            => True,
+        "PRODUCTION_MODE"              => False,
+        "CORS_ALLOW_ORIGIN"            => "*",
+        "ENABLE_API_GUI"               => False,
+        "ENABLE_API_KEYS_GUI"          => False,
+        "API_KEYS_ADMIN_PASSWORD"      => "",
+        "KEY_STORE_DRIVER"             => "php",
+        "KEY_STORE_DSN"                => "",
+        "KEY_STORE_URL"                => "",
+        "KEY_STORE_TOKEN"              => "",
+
+        /* ───────────────────────────────────────────────────────────────────── */
         /*                           HTTP Status codes                           */
         /* ───────────────────────────────────────────────────────────────────── */
         "HTTP_STATUS_CODES"            => [
@@ -98,9 +113,9 @@ try {
         /* ────────────────────────────────────────────────────────────────────────── */
         "NOW"                    => round(microtime(True)),
         "NOW_MICROSECONDS"       => microtime(True) * 1000,
-        "LAST_CALLED_JSON"       => "endpoints_lastcalled.json",
+        "LAST_CALLED_JSON"       => "data/endpoints_lastcalled.json",
         "COOLDOWN_TIME"          => 1,
-        "SLEEP_TIME"             => 1,
+        "SLEEP_TIME"             => 2,
 
 
         /* ────────────────────────────────────────────────────────────────────────── */
@@ -111,7 +126,7 @@ try {
             "disallowedEndpoints" => [],            # forbid this key from an endpoint (will override allowedEndpoints)
             "noTimeOut"           => False,         # allows this key to make unlimited requests with no cooldown
             "cooldown"            => 1,             # default cooldown time
-            "sleep"               => 1,             # default time to sleep before response
+            "sleep"               => 2,             # default time to sleep before response
             "notify"              => False,         # will notify you if you have set up SMS config
             "log_write"           => True,          # enables write_log function where possible if LOG_ENABLE !== False
         ],

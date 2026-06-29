@@ -73,6 +73,86 @@ function keysGuiFlashGet(): ?array
     return $flash;
 }
 
+function keysGuiConfigureSession(): void
+{
+    if (session_status() !== PHP_SESSION_NONE) {
+        return;
+    }
+
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.cookie_httponly', '1');
+    ini_set('session.cookie_samesite', 'Strict');
+    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443);
+    ini_set('session.cookie_secure', $secure ? '1' : '0');
+    session_start();
+}
+
+function keysGuiLoginThrottled(): bool
+{
+    $lockedUntil = (int) ($_SESSION['keys_gui_locked_until'] ?? 0);
+    return time() < $lockedUntil;
+}
+
+function keysGuiLoginLockMessage(): string
+{
+    $lockedUntil = (int) ($_SESSION['keys_gui_locked_until'] ?? 0);
+    $seconds = max(1, $lockedUntil - time());
+
+    return "Too many failed attempts. Try again in {$seconds}s.";
+}
+
+function keysGuiRecordLoginFailure(): void
+{
+    $attempts = (int) ($_SESSION['keys_gui_login_attempts'] ?? 0) + 1;
+    $_SESSION['keys_gui_login_attempts'] = $attempts;
+    if ($attempts >= 5) {
+        $_SESSION['keys_gui_locked_until'] = time() + 300;
+        $_SESSION['keys_gui_login_attempts'] = 0;
+    }
+}
+
+function keysGuiClearLoginFailures(): void
+{
+    unset($_SESSION['keys_gui_login_attempts'], $_SESSION['keys_gui_locked_until']);
+}
+
+/** @return array<string, mixed> */
+function keysGuiParseKeyOptionsFromRequest(string $prefix): array
+{
+    $options = [];
+    $noTimeoutKey = $prefix === 'create' ? 'no_timeout' : 'edit_no_timeout';
+    if (!empty($_POST[$noTimeoutKey])) {
+        $options['noTimeOut'] = true;
+    } else {
+        $options['noTimeOut'] = false;
+    }
+
+    $cooldownKey = $prefix === 'create' ? 'cooldown' : 'edit_cooldown';
+    if (isset($_POST[$cooldownKey]) && $_POST[$cooldownKey] !== '') {
+        $options['cooldown'] = max(0, (int) $_POST[$cooldownKey]);
+    }
+
+    $disallowedKey = $prefix === 'create' ? 'disallowed_endpoints' : 'edit_disallowed_endpoints';
+    $raw = trim((string) ($_POST[$disallowedKey] ?? ''));
+    if ($raw === '') {
+        $options['disallowedEndpoints'] = [];
+    } else {
+        $parts = preg_split('/\s*,\s*/', $raw) ?: [];
+        $disallowed = [];
+        foreach ($parts as $ep) {
+            $ep = trim($ep);
+            if ($ep === '' || !preg_match('/^[a-zA-Z0-9_]+$/', $ep)) {
+                return [];
+            }
+            $disallowed[] = $ep;
+        }
+        $options['disallowedEndpoints'] = array_values(array_unique($disallowed));
+    }
+
+    return $options;
+}
+
 /** @return list<string> */
 function keysGuiDiscoverEndpoints(): array
 {
@@ -255,7 +335,7 @@ if (keysGuiAdminPassword() === '') {
     exit;
 }
 
-session_start();
+keysGuiConfigureSession();
 
 if (isset($_GET['logout'])) {
     $_SESSION = [];
@@ -271,13 +351,18 @@ if (isset($_GET['logout'])) {
 $authenticated = !empty($_SESSION['keys_gui_auth']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'login') {
-    if (keysGuiVerifyPassword((string) ($_POST['password'] ?? ''), keysGuiAdminPassword())) {
+    if (keysGuiLoginThrottled()) {
+        $loginError = keysGuiLoginLockMessage();
+    } elseif (keysGuiVerifyPassword((string) ($_POST['password'] ?? ''), keysGuiAdminPassword())) {
+        keysGuiClearLoginFailures();
         session_regenerate_id(true);
         $_SESSION['keys_gui_auth'] = true;
         header('Location: api_keys_gui.php');
         exit;
+    } else {
+        keysGuiRecordLoginFailure();
+        $loginError = 'Invalid credentials.';
     }
-    $loginError = 'Invalid credentials.';
 }
 
 if ($authenticated && $_SERVER['REQUEST_METHOD'] === 'POST' && keysGuiValidateCsrf()) {
@@ -287,19 +372,16 @@ if ($authenticated && $_SERVER['REQUEST_METHOD'] === 'POST' && keysGuiValidateCs
     if ($action === 'create') {
         $name = trim((string) ($_POST['name'] ?? ''));
         $allowedEndpoints = keysGuiParseEndpointsFromRequest('create');
-        $noTimeout = isset($_POST['no_timeout']);
+        $optionPatch = keysGuiParseKeyOptionsFromRequest('create');
 
-        if ($allowedEndpoints === []) {
-            keysGuiFlashSet('danger', 'Invalid endpoint selection.');
+        if ($allowedEndpoints === [] || $optionPatch === []) {
+            keysGuiFlashSet('danger', 'Invalid endpoint or option values.');
         } elseif (!keysGuiValidName($name)) {
             keysGuiFlashSet('danger', 'Invalid key name. Use letters, numbers, underscores, and hyphens only.');
         } elseif ($store->exists($name)) {
             keysGuiFlashSet('danger', "Key name already exists: $name");
         } else {
-            $options = ['allowedEndpoints' => $allowedEndpoints];
-            if ($noTimeout) {
-                $options['noTimeOut'] = true;
-            }
+            $options = array_merge(['allowedEndpoints' => $allowedEndpoints], $optionPatch);
             $key = ApiKeyStore::generateKey();
             $store->create($name, $key, $options);
             keysGuiFlashSet('success', "Created key <strong>" . keysGuiH($name) . "</strong>. Copy it now — it will not be shown again:<br><code class='user-select-all'>" . keysGuiH($key) . "</code>");
@@ -312,9 +394,10 @@ if ($authenticated && $_SERVER['REQUEST_METHOD'] === 'POST' && keysGuiValidateCs
         $oldName = trim((string) ($_POST['old_name'] ?? ''));
         $newName = trim((string) ($_POST['name'] ?? ''));
         $allowedEndpoints = keysGuiParseEndpointsFromRequest('edit');
+        $optionPatch = keysGuiParseKeyOptionsFromRequest('edit');
 
-        if ($allowedEndpoints === []) {
-            keysGuiFlashSet('danger', 'Invalid endpoint selection.');
+        if ($allowedEndpoints === [] || $optionPatch === []) {
+            keysGuiFlashSet('danger', 'Invalid endpoint or option values.');
             header('Location: api_keys_gui.php?edit=' . rawurlencode($oldName));
             exit;
         } elseif (!keysGuiValidName($oldName) || !$store->exists($oldName)) {
@@ -325,7 +408,7 @@ if ($authenticated && $_SERVER['REQUEST_METHOD'] === 'POST' && keysGuiValidateCs
             keysGuiFlashSet('danger', "Key name already exists: $newName");
         } else {
             try {
-                $store->updateKey($oldName, $newName, $allowedEndpoints);
+                $store->updateKey($oldName, $newName, $allowedEndpoints, $optionPatch);
                 keysGuiFlashSet('success', 'Updated key: <strong>' . keysGuiH($newName) . '</strong>');
                 header('Location: api_keys_gui.php');
                 exit;
@@ -334,6 +417,38 @@ if ($authenticated && $_SERVER['REQUEST_METHOD'] === 'POST' && keysGuiValidateCs
             }
         }
         header('Location: api_keys_gui.php?edit=' . rawurlencode($oldName));
+        exit;
+    }
+
+    if ($action === 'enable') {
+        $name = trim((string) ($_POST['name'] ?? ''));
+        if ($name !== '' && $store->exists($name)) {
+            try {
+                $store->enable($name);
+                keysGuiFlashSet('success', 'Enabled key: ' . keysGuiH($name));
+            } catch (InvalidArgumentException $e) {
+                keysGuiFlashSet('danger', $e->getMessage());
+            }
+        } else {
+            keysGuiFlashSet('danger', 'Key not found.');
+        }
+        header('Location: api_keys_gui.php');
+        exit;
+    }
+
+    if ($action === 'rotate') {
+        $name = trim((string) ($_POST['name'] ?? ''));
+        if ($name !== '' && $store->exists($name)) {
+            try {
+                $newKey = $store->rotate($name);
+                keysGuiFlashSet('success', "Rotated key <strong>" . keysGuiH($name) . "</strong>. Copy the new secret now:<br><code class='user-select-all'>" . keysGuiH($newKey) . "</code>");
+            } catch (InvalidArgumentException $e) {
+                keysGuiFlashSet('danger', $e->getMessage());
+            }
+        } else {
+            keysGuiFlashSet('danger', 'Key not found.');
+        }
+        header('Location: api_keys_gui.php');
         exit;
     }
 
@@ -394,6 +509,10 @@ if ($editKey !== null) {
     $allEndpoints = in_array('*', $allowed, true);
     $endpointOptions = keysGuiMergeEndpointLists($availableEndpoints, $allowed);
     $editEndpointsField = keysGuiRenderEndpointsField('edit', $endpointOptions, $allowed, $allEndpoints);
+    $editCooldown = (int) ($editKey['options']['cooldown'] ?? COOLDOWN_TIME);
+    $editNoTimeout = !empty($editKey['options']['noTimeOut']);
+    $editDisallowed = $editKey['options']['disallowedEndpoints'] ?? [];
+    $editDisallowedStr = is_array($editDisallowed) ? implode(', ', $editDisallowed) : '';
     $openEditModal = true;
     $editModalHtml = '
     <div class="modal fade" id="editKeyModal" tabindex="-1" aria-labelledby="editKeyModalLabel" aria-hidden="true">
@@ -412,9 +531,25 @@ if ($editKey !== null) {
                             <label class="form-label" for="edit_name">Name</label>
                             <input type="text" class="form-control" id="edit_name" name="name" required maxlength="64" value="' . keysGuiH($editKey['name']) . '">
                         </div>
-                        <div class="mb-0">
+                        <div class="mb-3">
                             <label class="form-label">Allowed endpoints</label>
                             ' . $editEndpointsField . '
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="edit_disallowed_endpoints">Disallowed endpoints</label>
+                            <input type="text" class="form-control" id="edit_disallowed_endpoints" name="edit_disallowed_endpoints" value="' . keysGuiH($editDisallowedStr) . '" placeholder="comma-separated, optional">
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label" for="edit_cooldown">Cooldown (seconds)</label>
+                                <input type="number" class="form-control" id="edit_cooldown" name="edit_cooldown" min="0" value="' . keysGuiH((string) $editCooldown) . '">
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <label class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input" name="edit_no_timeout" id="edit_no_timeout"' . ($editNoTimeout ? ' checked' : '') . '>
+                                    <span class="form-check-label">No timeout</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -444,6 +579,8 @@ foreach ($keys as $key) {
     $lastUsed = $key['last_used_at'] !== null ? keysGuiH($key['last_used_at']) : '<span class="text-secondary">never</span>';
 
     $disableBtn = '';
+    $enableBtn = '';
+    $rotateBtn = '';
     $editBtn = '<a href="api_keys_gui.php?edit=' . rawurlencode($key['name']) . '" class="btn btn-sm btn-outline-primary">Edit</a>';
     if ($key['enabled']) {
         $disableBtn = '
@@ -452,6 +589,21 @@ foreach ($keys as $key) {
                 <input type="hidden" name="action" value="disable">
                 <input type="hidden" name="name" value="' . keysGuiH($key['name']) . '">
                 <button type="submit" class="btn btn-sm btn-outline-danger">Disable</button>
+            </form>';
+        $rotateBtn = '
+            <form method="post" class="d-inline" onsubmit="return confirm(' . json_encode('Rotate secret for ' . $key['name'] . '? The old key will stop working.') . ');">
+                <input type="hidden" name="csrf" value="' . keysGuiH($csrf) . '">
+                <input type="hidden" name="action" value="rotate">
+                <input type="hidden" name="name" value="' . keysGuiH($key['name']) . '">
+                <button type="submit" class="btn btn-sm btn-outline-warning">Rotate</button>
+            </form>';
+    } else {
+        $enableBtn = '
+            <form method="post" class="d-inline">
+                <input type="hidden" name="csrf" value="' . keysGuiH($csrf) . '">
+                <input type="hidden" name="action" value="enable">
+                <input type="hidden" name="name" value="' . keysGuiH($key['name']) . '">
+                <button type="submit" class="btn btn-sm btn-outline-success">Enable</button>
             </form>';
     }
 
@@ -462,7 +614,7 @@ foreach ($keys as $key) {
         <td>' . keysGuiH($noTimeout) . '</td>
         <td class="text-secondary">' . keysGuiH($key['created_at']) . '</td>
         <td class="text-secondary">' . $lastUsed . '</td>
-        <td class="text-nowrap">' . $editBtn . ' ' . $disableBtn . '</td>
+        <td class="text-nowrap">' . $editBtn . ' ' . $rotateBtn . $enableBtn . ' ' . $disableBtn . '</td>
     </tr>';
 }
 
@@ -489,9 +641,17 @@ keysGuiRenderPage('API Keys', '
                     <label class="form-label" for="name">Name</label>
                     <input type="text" class="form-control" id="name" name="name" required placeholder="my_key" maxlength="64">
                 </div>
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <label class="form-label">Allowed endpoints</label>
                     ' . $createEndpointsField . '
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="cooldown">Cooldown (s)</label>
+                    <input type="number" class="form-control" id="cooldown" name="cooldown" min="0" placeholder="' . keysGuiH((string) COOLDOWN_TIME) . '">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="disallowed_endpoints">Disallowed</label>
+                    <input type="text" class="form-control" id="disallowed_endpoints" name="disallowed_endpoints" placeholder="optional">
                 </div>
                 <div class="col-md-2 d-flex align-items-end pb-4">
                     <label class="form-check">

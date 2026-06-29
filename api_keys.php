@@ -1,4 +1,5 @@
 <?php
+
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                                   api_keys.php                             */
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -16,39 +17,19 @@ $keyStore = getApiKeyStore();
 if ($keyStore instanceof ApiKeyStore) {
     $apikeys = $keyStore->loadAll();
     if (empty($apikeys)) {
-        die("No API keys found in key store. Run: php bin/migrate-keys.php");
+        die('No API keys found in key store. Run: php bin/migrate-keys.php');
     }
     define('API_KEYS', $apikeys);
     return;
 }
 
-do {
-    $keys_folder = dirname(__FILE__) . '/keys';
-    $keys_files  = glob("$keys_folder/*.php");
+require_once dirname(__FILE__) . '/lib/config_loader.php';
 
-    if (empty($keys_files)) {
-        die("No keys files found in keys folder.");
-    }
+$keys_folder = dirname(__FILE__) . '/keys';
+loadPhpConfigDir($keys_folder, ['my_custom_keys.php'], 'my_custom_keys.php');
 
-    $excludes = [
-        $keys_folder . "/my_custom_keys.php",
-    ];
-    $count          = count($keys_files);
-    $count_excludes = count($excludes);
+if (!isset($apikeys) || empty($apikeys)) {
+    die('Variable $apikeys not set. Please check your settings (or more specifically your keys folder).');
+}
 
-    if ($count == $count_excludes) {
-        require_once($keys_folder . "/my_custom_keys.php");
-    } elseif ($count > $count_excludes) {
-        foreach (glob($keys_folder . "/*.php") as $file) {
-            if (!in_array($file, $excludes)) {
-                require_once($file);
-            }
-        }
-    }
-
-    if (!isset($apikeys) || empty($apikeys)) {
-        die("Variable \$apikeys not set. Please check your settings (or more specifically your keys folder).");
-    }
-
-    define('API_KEYS', $apikeys);
-} while (False);
+define('API_KEYS', $apikeys);

@@ -2,7 +2,7 @@
 <?php
 
 /**
- * Migrate API keys from keys/custom_api_keys.php into SQLite/Turso store.
+ * Migrate API keys from keys/*.php into SQLite/Turso store.
  *
  * Usage:
  *   php bin/migrate-keys.php [--rotate] [--dry-run]
@@ -25,6 +25,7 @@ if (!defined('KEY_STORE_DSN')) {
 
 require_once $root . '/api_settings.php';
 require_once $root . '/lib/bootstrap.php';
+require_once $root . '/lib/config_loader.php';
 
 $rotate = in_array('--rotate', $argv, true);
 $dryRun = in_array('--dry-run', $argv, true);
@@ -40,12 +41,6 @@ if (!$store instanceof ApiKeyStore) {
     exit(1);
 }
 
-$keysFile = $root . '/keys/custom_api_keys.php';
-if (!is_file($keysFile)) {
-    fwrite(STDERR, "No keys file found at keys/custom_api_keys.php\n");
-    exit(1);
-}
-
 $apikeys = [];
 
 function addAPIKey(string $name, string $key, array $options = []): void
@@ -57,10 +52,16 @@ function addAPIKey(string $name, string $key, array $options = []): void
     ];
 }
 
-require $keysFile;
+$keysDir = $root . '/keys';
+if (!is_dir($keysDir)) {
+    fwrite(STDERR, "No keys directory found at keys/\n");
+    exit(1);
+}
+
+loadPhpConfigDir($keysDir, ['my_custom_keys.php'], 'my_custom_keys.php');
 
 if (empty($apikeys)) {
-    fwrite(STDERR, "No keys loaded from custom_api_keys.php\n");
+    fwrite(STDERR, "No keys loaded from keys/*.php\n");
     exit(1);
 }
 

@@ -105,4 +105,35 @@ final class ApiKeyStoreTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->store->updateKey('alpha', 'beta', ['*']);
     }
+
+    public function testEnableReactivatesDisabledKey(): void
+    {
+        $this->store->create('alpha', 'key-alpha');
+        $this->store->disable('alpha');
+        $this->assertNull($this->store->validate('key-alpha'));
+
+        $this->store->enable('alpha');
+        $this->assertSame('alpha', $this->store->validate('key-alpha'));
+    }
+
+    public function testRotateChangesSecret(): void
+    {
+        $this->store->create('alpha', 'old-secret');
+        $newSecret = $this->store->rotate('alpha');
+
+        $this->assertNotSame('old-secret', $newSecret);
+        $this->assertNull($this->store->validate('old-secret'));
+        $this->assertSame('alpha', $this->store->validate($newSecret));
+    }
+
+    public function testUpdateOptionsPatchesFields(): void
+    {
+        $this->store->create('alpha', 'key-alpha', ['cooldown' => 1]);
+        $this->store->updateOptions('alpha', ['cooldown' => 9, 'noTimeOut' => true]);
+
+        $row = $this->store->getByName('alpha');
+        $this->assertNotNull($row);
+        $this->assertSame(9, $row['options']['cooldown']);
+        $this->assertTrue($row['options']['noTimeOut']);
+    }
 }

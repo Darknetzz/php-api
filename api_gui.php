@@ -2,61 +2,192 @@
 
 <?php
 require_once __DIR__ . '/api_settings.php';
+require_once __DIR__ . '/api_base.php';
+require_once __DIR__ . '/api_endpoints.php';
 require_once __DIR__ . '/lib/endpoint_discovery.php';
+
+if (!defined('ENABLE_API_GUI') || ENABLE_API_GUI !== true) {
+    http_response_code(404);
+    echo 'Not found.';
+    exit;
+}
+
+function guiH(string $value): string
+{
+    return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
 ?>
 
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API GUI</title>
-    
-    <!-- tabler.io -->
     <link rel="stylesheet" href="https://ubuntu.roste.org/_assets/tabler.min.css">
     <script src="https://ubuntu.roste.org/_assets/tabler.min.js"></script>
-
+    <style>
+        .endpoint-card { margin-bottom: 1rem; }
+        .try-result { max-height: 20rem; overflow: auto; font-size: 0.85rem; }
+        .badge-open { background-color: #2fb344; color: #fff !important; }
+        .badge-protected { background-color: #626976; color: #fff !important; }
+    </style>
 </head>
-
 <body data-bs-theme="dark">
-
-    <div class="container pt-5">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="container pt-5 pb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="mb-0">API Endpoints</h1>
-            <?php if (defined('ENABLE_API_KEYS_GUI') && ENABLE_API_KEYS_GUI === true && defined('KEY_STORE_DRIVER') && KEY_STORE_DRIVER !== 'php'): ?>
-                <a href="api_keys_gui.php" class="btn btn-outline-primary btn-sm">Manage API Keys</a>
-            <?php endif; ?>
+            <div>
+                <?php if (defined('ENABLE_API_KEYS_GUI') && ENABLE_API_KEYS_GUI === true && defined('KEY_STORE_DRIVER') && KEY_STORE_DRIVER !== 'php'): ?>
+                    <a href="api_keys_gui.php" class="btn btn-outline-primary btn-sm">Manage API Keys</a>
+                <?php endif; ?>
+            </div>
         </div>
-        <p>List of available API endpoints:</p>
-        <ul>
-            <?php
-            foreach (discoverEndpointPhpFiles() as $endpoint) {
-                $functions = discoverApiFunctionsFromFile($endpoint);
-                if ($functions === []) {
-                    continue;
-                }
-                $endpoint_name = basename($endpoint, '.php');
-                $section = str_starts_with($endpoint, __DIR__ . '/endpoints/examples/')
-                    ? 'examples/' . $endpoint_name
-                    : $endpoint_name;
-                echo '<h3>' . htmlspecialchars($section, ENT_QUOTES, 'UTF-8') . '</h3>';
-                foreach ($functions as $func) {
-                    $func_name_clean = htmlspecialchars($func['clean'], ENT_QUOTES, 'UTF-8');
-                    echo '<ul><li><strong class="text-warning">Function:</strong> <a href="index.php?endpoint=' . $func_name_clean . '">' . $func_name_clean . '</a>';
-                    if ($func['params'] !== '') {
-                        $param_list = array_map('trim', explode(',', $func['params']));
-                        echo '<ul>';
-                        foreach ($param_list as $param) {
-                            echo '<li><em class="text-secondary">Param:</em> ' . htmlspecialchars($param, ENT_QUOTES, 'UTF-8') . '</li>';
-                        }
-                        echo '</ul>';
-                    }
-                    echo '</li></ul>';
-                }
-                echo '<hr>';
-            }
-            ?>
-        </ul>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <label class="form-label" for="endpoint-search">Search endpoints</label>
+                <input type="search" class="form-control" id="endpoint-search" placeholder="Filter by name or file...">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-7" id="endpoint-list">
+                <?php foreach (discoverEndpointPhpFiles() as $endpointFile): ?>
+                    <?php $functions = discoverApiFunctionsReflection($endpointFile); ?>
+                    <?php if ($functions === []) continue; ?>
+                    <?php
+                    $section = str_starts_with($endpointFile, __DIR__ . '/endpoints/examples/')
+                        ? 'examples/' . basename($endpointFile, '.php')
+                        : basename($endpointFile, '.php');
+                    ?>
+                    <div class="card endpoint-card" data-section="<?= guiH($section) ?>">
+                        <div class="card-header"><h3 class="card-title mb-0"><?= guiH($section) ?></h3></div>
+                        <div class="card-body">
+                            <?php foreach ($functions as $func): ?>
+                                <?php $isOpen = endpointIsOpen($func['clean']); ?>
+                                <div class="mb-3 endpoint-item" data-name="<?= guiH($func['clean']) ?>">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <strong class="text-warning"><?= guiH($func['clean']) ?></strong>
+                                        <span class="badge <?= $isOpen ? 'badge-open' : 'badge-protected' ?>"><?= $isOpen ? 'open' : 'auth' ?></span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-auto try-btn"
+                                            data-endpoint="<?= guiH($func['clean']) ?>"
+                                            data-open="<?= $isOpen ? '1' : '0' ?>"
+                                            data-params="<?= guiH(json_encode($func['parameters'], JSON_THROW_ON_ERROR)) ?>">
+                                            Try it
+                                        </button>
+                                    </div>
+                                    <?php if ($func['params'] !== ''): ?>
+                                        <code class="text-secondary small"><?= guiH($func['params']) ?></code>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card sticky-top" style="top: 1rem;">
+                    <div class="card-header"><h3 class="card-title mb-0">Try endpoint</h3></div>
+                    <div class="card-body">
+                        <form id="try-form">
+                            <div class="mb-3">
+                                <label class="form-label" for="try-endpoint">Endpoint</label>
+                                <input type="text" class="form-control" id="try-endpoint" name="endpoint" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="try-apikey">API key <span class="text-secondary">(if required)</span></label>
+                                <input type="password" class="form-control" id="try-apikey" name="apikey" autocomplete="off">
+                            </div>
+                            <div class="mb-3" id="try-params"></div>
+                            <button type="submit" class="btn btn-primary w-100">Send request</button>
+                        </form>
+                        <pre class="try-result mt-3 p-2 bg-dark border rounded text-secondary" id="try-result">Response will appear here.</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <script>
+        const searchInput = document.getElementById('endpoint-search');
+        const tryForm = document.getElementById('try-form');
+        const tryEndpoint = document.getElementById('try-endpoint');
+        const tryApikey = document.getElementById('try-apikey');
+        const tryParams = document.getElementById('try-params');
+        const tryResult = document.getElementById('try-result');
+
+        searchInput.addEventListener('input', function () {
+            const q = this.value.toLowerCase();
+            document.querySelectorAll('.endpoint-card').forEach(function (card) {
+                const section = (card.dataset.section || '').toLowerCase();
+                let any = false;
+                card.querySelectorAll('.endpoint-item').forEach(function (item) {
+                    const name = (item.dataset.name || '').toLowerCase();
+                    const show = !q || section.includes(q) || name.includes(q);
+                    item.style.display = show ? '' : 'none';
+                    if (show) any = true;
+                });
+                card.style.display = any ? '' : 'none';
+            });
+        });
+
+        function renderParams(parameters) {
+            tryParams.innerHTML = '';
+            parameters.forEach(function (param) {
+                const wrap = document.createElement('div');
+                wrap.className = 'mb-2';
+                const label = document.createElement('label');
+                label.className = 'form-label';
+                label.textContent = param.name + (param.optional ? ' (optional)' : '');
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'form-control';
+                input.name = 'param_' + param.name;
+                input.dataset.paramName = param.name;
+                if (param.optional && param.default !== null && param.default !== undefined) {
+                    input.placeholder = 'default: ' + String(param.default);
+                }
+                wrap.appendChild(label);
+                wrap.appendChild(input);
+                tryParams.appendChild(wrap);
+            });
+        }
+
+        document.querySelectorAll('.try-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                tryEndpoint.value = btn.dataset.endpoint;
+                tryApikey.required = btn.dataset.open !== '1';
+                renderParams(JSON.parse(btn.dataset.params || '[]'));
+                tryResult.textContent = 'Ready to send request.';
+            });
+        });
+
+        tryForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const params = new URLSearchParams();
+            params.set('endpoint', tryEndpoint.value);
+            if (tryApikey.value) {
+                params.set('apikey', tryApikey.value);
+            }
+            tryParams.querySelectorAll('input[data-param-name]').forEach(function (input) {
+                if (input.value !== '') {
+                    params.set(input.dataset.paramName, input.value);
+                }
+            });
+            tryResult.textContent = 'Loading...';
+            try {
+                const response = await fetch('index.php?' + params.toString());
+                const text = await response.text();
+                try {
+                    tryResult.textContent = JSON.stringify(JSON.parse(text), null, 2);
+                } catch (e) {
+                    tryResult.textContent = text;
+                }
+            } catch (err) {
+                tryResult.textContent = String(err);
+            }
+        });
+    </script>
 </body>
+</html>

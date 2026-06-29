@@ -6,20 +6,23 @@
 /* ────────────────────────────────────────────────────────────────────────── */
 
 header('Content-type: application/json;');
-// CORS: set in settings via CORS_ALLOW_ORIGIN (e.g. '*' or 'https://example.com')
-if (defined('CORS_ALLOW_ORIGIN')) {
-    header('Access-Control-Allow-Origin: '.CORS_ALLOW_ORIGIN);
-} else {
-    header('Access-Control-Allow-Origin: *');
-}
 
 /* ───────────────────────────────────────────────────────────────────── */
 /*                         Require settings file                         */
 /* ───────────────────────────────────────────────────────────────────── */
-# this needs to be done here because we allow custom a index
-# Check for custom settings file first, then include api_settings.php regardless
-# as it will set defaults if it's not defined by custom_settings.
 require_once('api_settings.php');
+
+if (defined('CORS_ALLOW_ORIGIN')) {
+    header('Access-Control-Allow-Origin: ' . CORS_ALLOW_ORIGIN);
+} else {
+    header('Access-Control-Allow-Origin: *');
+}
+
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
 /* ───────────────────────────────────────────────────────────────────── */
 
 if (defined('ENABLE_CUSTOM_INDEX_NOPARAMS') 
@@ -74,12 +77,9 @@ if (!preg_match('/^[a-zA-Z0-9_]+$/', $endpoint_input)) {
     die(err("Invalid endpoint name. Only alphanumeric characters and underscores are allowed.", 400));
 }
 
-$endpoint = "api_".$endpoint_input;
+$endpoint = 'api_' . $endpoint_input;
 if (!function_exists($endpoint)) {
-    $fallback = "api_" . preg_replace('/[^a-zA-Z0-9_]/', '', (string) $_REQUEST['endpoint']);
-    if (function_exists($fallback)) {
-        $endpoint = $fallback;
-    }
+    die(err("Endpoint not found: $endpoint_input", 404));
 }
 
 # Apart from that we don't wish to extinguish between request methods (for now), unless unspecified.

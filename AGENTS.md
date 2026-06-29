@@ -8,20 +8,22 @@ Customizable PHP API framework. Requests hit `index.php`, which loads settings, 
 index.php          → entry point (routing, validation, JSON response)
 api_base.php       → core logic (auth, cooldown, logging, callFunction)
 api_settings.php   → loads settings/*.php
-api_endpoints.php  → loads endpoints/*.php
+api_endpoints.php  → loadEndpointPhpFiles() via lib/endpoint_discovery.php
 api_keys.php       → loads keys (file or DB) → defines API_KEYS
 api_aliases.php    → loads aliases/*.php
 lib/ApiKeyStore.php → SQLite/Turso key storage (SHA-256 hashes only)
 lib/bootstrap.php  → getApiKeyStore(), auth header helpers (loaded via api_base.php)
-bin/api-keys.php   → CLI: list, create, disable keys
-bin/migrate-keys.php → migrate keys/custom_api_keys.php → DB
+lib/config_loader.php → shared glob/exclude loader for settings, keys, endpoints, aliases
+lib/endpoint_discovery.php → discover + load endpoints (GUI, runtime, introspection)
+bin/api-keys.php   → CLI: list, show, create, update, enable, disable, rotate
+bin/migrate-keys.php → migrate keys/*.php → DB
 ```
 
 Request flow: `?endpoint=foo` → resolves to `api_foo()` → returns JSON via `api_response()`.
 
 ## API key storage
 
-Keys can be stored in PHP files (legacy) or in SQLite/Turso (in progress / preferred).
+Keys can be stored in PHP files (legacy) or in SQLite/Turso (preferred).
 
 | `KEY_STORE_DRIVER` | Source | Notes |
 |--------------------|--------|-------|
@@ -45,17 +47,32 @@ When `KEY_STORE_DRIVER` is `sqlite` or `turso`:
 **CLI**
 
 ```bash
-php bin/migrate-keys.php              # import keys/custom_api_keys.php
+php bin/migrate-keys.php              # import keys/*.php (same rules as api_keys.php)
 php bin/migrate-keys.php --rotate     # migrate with new random keys
 php bin/migrate-keys.php --dry-run
 php bin/api-keys.php list
-php bin/api-keys.php create MyKey --endpoint=foo --no-timeout
+php bin/api-keys.php show MyKey
+php bin/api-keys.php create MyKey --endpoint=foo --no-timeout --cooldown=2
+php bin/api-keys.php update MyKey --endpoint=bar --disallowed=baz
+php bin/api-keys.php enable MyKey
 php bin/api-keys.php disable MyKey
+php bin/api-keys.php rotate MyKey
 ```
 
 **Schema** (`lib/ApiKeyStore.php`): `api_keys` table with `name`, `key_hash`, `options` (JSON), `enabled`, `created_at`, `last_used_at`.
 
-**Tests:** `vendor/bin/phpunit` — see `tests/ApiKeyStoreTest.php`.
+**Tests:** `vendor/bin/phpunit` — `tests/ApiKeyStoreTest.php`, `CallFunctionTest.php`, `EndpointOpenTest.php`, `EndpointDiscoveryTest.php`.
+
+## GUI
+
+| Flag | File | Purpose |
+|------|------|---------|
+| `ENABLE_API_GUI` | `api_gui.php` | Endpoint browser with search, open/auth badges, try-it-out panel |
+| `ENABLE_API_KEYS_GUI` | `api_keys_gui.php` | Session admin for DB-backed keys (requires `KEY_STORE_DRIVER` ≠ `php`) |
+
+Both UIs return 404 when their flag is off (direct URL access is blocked). Set `API_KEYS_ADMIN_PASSWORD` via env or gitignored `settings/custom_secrets.php` — see `SECURITY.md`.
+
+Introspection endpoints live in `endpoints/examples/introspection.php`: `getallendpoints`, `getendpointparams`.
 
 ## Where to change things
 
@@ -78,6 +95,7 @@ Gitignored deployment files: `custom_*` in config folders, `data/` (SQLite DB), 
 - Always return an array.
 - Parameters map from query/body keys; required params have no default value.
 - Do **not** `require` `lib/bootstrap.php` or other core files — use globals/constants (`API_KEYS`, etc.) provided by the loader chain.
+- Use framework helpers (`userIP()`, etc.) in example endpoints rather than reading raw headers.
 
 **API keys**
 - File mode: register with `addAPIKey(name:, key:, options:)` in a keys file.
@@ -110,7 +128,7 @@ Read `SECURITY.md` before changing auth, IP handling, or redirects.
 4. Do not add secrets to tracked files; use `custom_*` files, env vars, or the DB store.
 5. Test endpoints via curl: `?endpoint=<name>&apikey=<key>` or `apikey` header.
 6. Run `vendor/bin/phpunit` after changes to `lib/ApiKeyStore.php` or auth flow.
-7. Optional dev UI: `api_gui.php` (loaded when no endpoint is given).
+7. Optional dev UIs: `api_gui.php` (endpoint browser) and `api_keys_gui.php` (key admin when using DB store).
 
 ## Stack
 

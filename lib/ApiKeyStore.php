@@ -267,6 +267,52 @@ SQL;
         $this->exec('UPDATE api_keys SET enabled = 0 WHERE name = ?', [$name]);
     }
 
+    public function enable(string $name): void
+    {
+        if (!$this->exists($name)) {
+            throw new InvalidArgumentException("Key not found: $name");
+        }
+        $this->exec('UPDATE api_keys SET enabled = 1 WHERE name = ?', [$name]);
+    }
+
+    /** @return string New plaintext secret (shown once). */
+    public function rotate(string $name): string
+    {
+        if (!$this->exists($name)) {
+            throw new InvalidArgumentException("Key not found: $name");
+        }
+        $plaintext = self::generateKey();
+        $hash = self::hashKey($plaintext);
+        $this->exec('UPDATE api_keys SET key_hash = ? WHERE name = ?', [$hash, $name]);
+
+        return $plaintext;
+    }
+
+    /** @param array<string, mixed> $optionsPatch */
+    public function updateOptions(string $name, array $optionsPatch): void
+    {
+        if (!$this->exists($name)) {
+            throw new InvalidArgumentException("Key not found: $name");
+        }
+
+        $row = $this->fetchOne('SELECT options FROM api_keys WHERE name = ?', [$name]);
+        $options = json_decode($row['options'] ?? '{}', true);
+        if (!is_array($options)) {
+            $options = [];
+        }
+
+        foreach ($optionsPatch as $key => $value) {
+            $options[$key] = $value;
+        }
+
+        $options = self::mergeDefaultOptions($options);
+
+        $this->exec(
+            'UPDATE api_keys SET options = ? WHERE name = ?',
+            [json_encode($options, JSON_THROW_ON_ERROR), $name]
+        );
+    }
+
     public function exists(string $name): bool
     {
         $row = $this->fetchOne('SELECT id FROM api_keys WHERE name = ?', [$name]);
@@ -298,8 +344,8 @@ SQL;
         ];
     }
 
-    /** @param list<string> $allowedEndpoints */
-    public function updateKey(string $name, string $newName, array $allowedEndpoints): void
+    /** @param list<string> $allowedEndpoints @param array<string, mixed> $optionsPatch */
+    public function updateKey(string $name, string $newName, array $allowedEndpoints, array $optionsPatch = []): void
     {
         if (!$this->exists($name)) {
             throw new InvalidArgumentException("Key not found: $name");
@@ -314,6 +360,10 @@ SQL;
             $options = [];
         }
         $options['allowedEndpoints'] = $allowedEndpoints;
+        foreach ($optionsPatch as $key => $value) {
+            $options[$key] = $value;
+        }
+        $options = self::mergeDefaultOptions($options);
 
         $this->exec(
             'UPDATE api_keys SET name = ?, options = ? WHERE name = ?',

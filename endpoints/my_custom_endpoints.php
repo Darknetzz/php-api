@@ -37,8 +37,7 @@ function api_echo(string $input, string $append = "Optional parameter") {
 
 # This endpoint will return the user's IP address.
 function api_ip() {
-    $ip = (!empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
-    return ["ip" => $ip];
+    return ['ip' => userIP()];
 }
 
 ?>

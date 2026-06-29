@@ -202,7 +202,7 @@ php_api/
 ├── api_keys_gui.php          # Optional admin UI for DB-backed keys
 │
 ├── settings/                 # Configuration overrides
-│   ├── default_settings.php  # Documented defaults (loaded last in chain)
+│   ├── default_settings.php  # Canonical defaults (loaded last)
 │   └── my_custom_settings.php / custom_*.php
 │
 ├── endpoints/                # Your API handlers (api_foo → ?endpoint=foo)
@@ -501,6 +501,22 @@ But if you must, here are the functions and their purpose:
 
 
 
+
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+<!--                         Optional browser UIs                            -->
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+<hr>
+
+## 🖥️ Optional browser UIs
+
+| Setting | URL | Notes |
+| :------ | :-- | :---- |
+| `ENABLE_API_GUI` | `api_gui.php` | Browse endpoints, search, try-it-out panel. Returns 404 when disabled. |
+| `ENABLE_API_KEYS_GUI` | `api_keys_gui.php` | Manage SQLite/Turso keys in the browser. Requires `KEY_STORE_DRIVER` of `sqlite` or `turso`. |
+
+Set `API_KEYS_ADMIN_PASSWORD` with a bcrypt hash in gitignored `settings/custom_secrets.php` or via the `API_KEYS_ADMIN_PASSWORD` environment variable. See `SECURITY.md` for the production checklist.
+
+Introspection: `?endpoint=getallendpoints` and `?endpoint=getendpointparams&ep=foo` (example handlers under `endpoints/examples/`).
 
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 <!--                              Using the API                              -->

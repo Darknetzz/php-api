@@ -358,7 +358,7 @@ function api_response(string $status, mixed $data) : string {
     log_write("api_response(): The API responded with a status of $status.");
 
     $pretty_print = JSON_UNESCAPED_UNICODE;
-    if (var_assert(($params['compact']), true)) {
+    if (!var_assert($params['compact'], true)) {
         $pretty_print = JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT;
     }
 
@@ -499,13 +499,12 @@ function callFunction(string $func, array $params = []) {
             if (empty(API_KEYS[$valid_apikey]['options'])) {
                 die(err("The options for this API key cannot be found"));
             }
-            $apikey_options = API_KEYS[$valid_apikey]['options'];
+            $apikey_options = ApiKeyStore::mergeDefaultOptions(API_KEYS[$valid_apikey]['options']);
 
-            # Get logging option for this API key
-            if (empty($apikey_options['log_write'])) {
+            if (!isset($apikey_options['log_write'])) {
                 die(err("Option 'log_write' not specified for this API key."));
             }
-            $apikey_logging = $apikey_options['log_write']; # this is used in log_write
+            $GLOBALS['apikey_logging'] = (bool) $apikey_options['log_write'];
 
             # Check if this key is specifically disallowed
             if (in_array($endpoint, $apikey_options["disallowedEndpoints"])) {
@@ -573,15 +572,15 @@ function callFunction(string $func, array $params = []) {
         }
 
         # Error: Too quick!
-        if ($secondsSinceLastCalled < COOLDOWN_TIME && $apikey_options["noTimeOut"] === false) {
+        $cooldown = (int) ($apikey_options['cooldown'] ?? COOLDOWN_TIME);
+        if ($secondsSinceLastCalled < $cooldown && $apikey_options['noTimeOut'] === false) {
             return err(funnyResponse(
-                "COOLDOWN", [
-                    "endpoint" => $func,
-                    "secondsSinceLastCalled" => $secondsSinceLastCalled,
-                    "secondsToWait" => (COOLDOWN_TIME - $secondsSinceLastCalled),
-                    "noTimeOut" => $apikey_options["noTimeOut"],
+                'COOLDOWN', [
+                    'endpoint' => $func,
+                    'secondsSinceLastCalled' => $secondsSinceLastCalled,
+                    'secondsToWait' => ($cooldown - $secondsSinceLastCalled),
+                    'noTimeOut' => $apikey_options['noTimeOut'],
                 ]), 403);
-            // return err("The endpoint '$func' was called a mere ".$secondsSinceLastCalled." seconds ago! Please wait another ".(COOLDOWN_TIME - $secondsSinceLastCalled)." seconds.");
         }
 
         $functionCall = $functionObject->invokeArgs($paramsClean);
@@ -619,15 +618,28 @@ function callFunction(string $func, array $params = []) {
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                                  NOTE: Function secondsSinceLastCalled */
 /* ────────────────────────────────────────────────────────────────────────── */
+function ensureLastCalledJsonFile(): string
+{
+    $path = LAST_CALLED_JSON;
+    $dir = dirname($path);
+    if ($dir !== '.' && $dir !== '' && !is_dir($dir) && !mkdir($dir, 0750, true) && !is_dir($dir)) {
+        die(err('Unable to create last-called directory: ' . $dir));
+    }
+    if (!file_exists($path)) {
+        touch($path);
+    }
+
+    return $path;
+}
+
 function secondsSinceLastCalled($function_name, $valid_apikey = null) {
     try {
 
-        if (!file_exists(LAST_CALLED_JSON)) {
-            touch(LAST_CALLED_JSON);
-        }
+        ensureLastCalledJsonFile();
+        $path = LAST_CALLED_JSON;
 
         // Security: Add file locking for reading to prevent race conditions
-        $fh = fopen(LAST_CALLED_JSON, 'r');
+        $fh = fopen($path, 'r');
         if (!$fh) {
             die(err("Unable to open last called file for reading"));
         }
@@ -680,12 +692,11 @@ function secondsSinceLastCalled($function_name, $valid_apikey = null) {
 function updateLastCalled($function_name, $valid_apikey = null) {
     try {
 
-        if (!file_exists(LAST_CALLED_JSON)) {
-            touch(LAST_CALLED_JSON);
-        }
+        ensureLastCalledJsonFile();
+        $path = LAST_CALLED_JSON;
 
         // Security: Read with shared lock
-        $fh_read = fopen(LAST_CALLED_JSON, 'r');
+        $fh_read = fopen($path, 'r');
         if (!$fh_read) {
             die(err("Unable to open last called file for reading"));
         }

@@ -102,6 +102,52 @@ This document outlines the security measures implemented in this PHP API and bes
 - HTTP header auth: `apikey`, `X-Api-Key`, or `Authorization: Bearer`
 - `.htaccess` rules block direct access to `keys/`, `settings/`, `lib/`, `data/`
 
+### 11. Webroot exposure
+
+**Issue**: Endpoint PHP files, aliases, and runtime JSON/logs were reachable under the webroot.
+
+**Fix**:
+- `.htaccess` blocks direct HTTP access to `endpoints/`, `aliases/`, `keys/`, `settings/`, `lib/`, `data/`, `bin/`
+- Cooldown state defaults to `data/endpoints_lastcalled.json` (outside casual browsing when `data/` is blocked)
+
+### 12. API GUI information disclosure
+
+**Issue**: `api_gui.php` could be opened directly even when `ENABLE_API_GUI` was false, exposing endpoint names.
+
+**Fix**:
+- `api_gui.php` returns 404 when `ENABLE_API_GUI` is not enabled
+- `index.php` only redirects to the GUI when the flag is on
+
+### 13. API Keys admin UI
+
+The keys admin UI (`api_keys_gui.php`) is optional and gated by `ENABLE_API_KEYS_GUI` plus `KEY_STORE_DRIVER` of `sqlite` or `turso`.
+
+**Production checklist**:
+- Set `API_KEYS_ADMIN_PASSWORD` via environment variable (preferred) or a gitignored `settings/custom_secrets.php` entry using `password_hash()`
+- Do not commit plaintext or bcrypt hashes in tracked settings files
+- Enable HTTPS so `session.cookie_secure` can be set
+- Session cookies use `HttpOnly` and `SameSite=Strict`
+- Login is rate-limited (5 failures → 5 minute lockout)
+- Restrict access by IP, VPN, or reverse-proxy authentication where possible
+- Keep `ENABLE_API_KEYS_GUI` false on production hosts that do not need browser key management
+
+```bash
+# Generate a bcrypt hash for custom_secrets.php (use single quotes in bash)
+php -r 'echo password_hash("your-strong-password", PASSWORD_DEFAULT), PHP_EOL;'
+```
+
+```php
+// settings/custom_secrets.php (gitignored pattern: custom_*)
+$customs = [
+    'API_KEYS_ADMIN_PASSWORD' => '$2y$12$...',
+];
+foreach ($customs as $const => $val) {
+    if (!defined($const)) {
+        define($const, $val);
+    }
+}
+```
+
 ## Security Settings Reference
 
 ### Required Settings for Production
@@ -128,7 +174,7 @@ const LOG_ENABLE = true;                // Enable logging for security monitorin
 - **Recommended:** use SQLite or Turso (`KEY_STORE_DRIVER`) — keys stored as SHA-256 hashes in `data/api.db` or a Turso database
 - Generate strong random API keys (minimum 32 characters)
 - Migrate from PHP files: `php bin/migrate-keys.php [--rotate]`
-- Manage keys via CLI: `php bin/api-keys.php list|create|disable`
+- Manage keys via CLI: `php bin/api-keys.php list|show|create|update|enable|disable|rotate`
 - Rotate keys periodically; never commit `keys/custom_*.php` or `data/api.db`
 
 ```php
@@ -150,7 +196,7 @@ chmod 640 data/api.db
 chmod 640 keys/*.php
 chmod 640 settings/*.php
 chmod 660 api.log
-chmod 660 endpoints_lastcalled.json
+chmod 660 data/endpoints_lastcalled.json
 ```
 
 ### 3. Web Server Configuration
