@@ -12,6 +12,10 @@ I will not take responsibility or be held liable for any consequences of doing s
   - [📖 Table of contents](#-table-of-contents)
   - [☑️ Prerequisites](#️-prerequisites)
   - [💻 Installing](#-installing)
+  - [🏗️ Architecture](#️-architecture)
+    - [Request flow](#request-flow)
+    - [How files connect](#how-files-connect)
+    - [Directory layout](#directory-layout)
   - [⚙️ Configuration](#️-configuration)
     - [📄 File summary](#-file-summary)
     - [🪛 Settings](#-settings)
@@ -53,6 +57,177 @@ $ git clone -b dev https://github.com/Darknetzz/php_api.git
 ```
 
 You have now installed the API to https://<YOUR_SERVER>/php_api
+
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+<!--                               Architecture                              -->
+<!-- ─────────────────────────────────────────────────────────────────────── -->
+<hr>
+
+## 🏗️ Architecture
+
+Every HTTP request enters through `index.php`, which loads configuration and endpoint code, then dispatches to an `api_*` function. Customize behavior by adding files under the config folders — you rarely need to edit the core `api_*.php` loaders.
+
+### Request flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant index as index.php
+    participant settings as api_settings.php
+    participant base as api_base.php
+    participant endpoints as api_endpoints.php
+    participant keys as api_keys.php
+    participant aliases as api_aliases.php
+    participant handler as api_foo()
+
+    Client->>index: GET ?endpoint=foo&apikey=...
+    index->>settings: require (load constants)
+    Note over settings: settings/custom_*.php → defaults
+    index->>base: require (auth, logging, callFunction)
+    Note over base: lib/bootstrap.php
+    index->>endpoints: require (register handlers)
+    index->>keys: require (define API_KEYS)
+    index->>aliases: require (define ENDPOINT_ALIASES)
+    index->>index: resolve alias, validate endpoint name
+    index->>base: callFunction("api_foo", params)
+    base->>base: apikey_validate, cooldown, logging
+    base->>handler: invoke via reflection
+    handler-->>base: array result
+    base-->>Client: JSON via api_response()
+```
+
+If no `endpoint` parameter is given and `ENABLE_API_GUI` is on, `index.php` redirects to `api_gui.php` instead.
+
+### How files connect
+
+```mermaid
+flowchart TB
+    subgraph entry["Entry points"]
+        index["index.php"]
+        gui["api_gui.php"]
+        keys_gui["api_keys_gui.php"]
+        cli_keys["bin/api-keys.php"]
+        cli_migrate["bin/migrate-keys.php"]
+    end
+
+    subgraph loaders["Core loaders (do not edit for normal config)"]
+        api_settings["api_settings.php"]
+        api_base["api_base.php"]
+        api_endpoints["api_endpoints.php"]
+        api_keys["api_keys.php"]
+        api_aliases["api_aliases.php"]
+    end
+
+    subgraph lib["lib/"]
+        bootstrap["bootstrap.php"]
+        keystore["ApiKeyStore.php"]
+        discovery["endpoint_discovery.php"]
+    end
+
+    subgraph config["Your config (extend these)"]
+        settings_dir["settings/*.php"]
+        endpoints_dir["endpoints/*.php"]
+        keys_dir["keys/*.php"]
+        aliases_dir["aliases/*.php"]
+    end
+
+    subgraph storage["Key storage"]
+        sqlite["data/api.db"]
+        turso["Turso / libSQL"]
+    end
+
+  index --> api_settings
+  index --> api_base
+  index --> api_endpoints
+  index --> api_keys
+  index --> api_aliases
+
+  gui --> api_settings
+  gui --> discovery
+  keys_gui --> api_settings
+  keys_gui --> bootstrap
+  keys_gui --> discovery
+
+  cli_keys --> api_settings
+  cli_keys --> bootstrap
+  cli_migrate --> api_settings
+  cli_migrate --> bootstrap
+  cli_migrate --> keys_dir
+
+  api_settings --> settings_dir
+  api_settings --> default_settings["settings/default_settings.php"]
+
+  api_base --> bootstrap
+  bootstrap --> keystore
+
+  api_endpoints --> discovery
+  api_endpoints --> endpoints_dir
+  api_endpoints --> examples["endpoints/examples/*.php"]
+
+  api_keys --> bootstrap
+  api_keys --> keys_dir
+  api_keys --> keystore
+  keystore --> sqlite
+  keystore --> turso
+
+  api_aliases --> aliases_dir
+
+  api_base --> call_fn["callFunction()"]
+  call_fn --> endpoints_dir
+```
+
+**Load order matters:** settings are applied first (so constants like `KEY_STORE_DRIVER` exist), then `api_base.php` brings in shared helpers, then endpoints register `api_*` functions, then keys populate `API_KEYS`, then aliases populate `ENDPOINT_ALIASES`.
+
+| You change… | Loader | Config folder / store |
+| :---------- | :----- | :-------------------- |
+| Timeouts, logging, CORS, open endpoints | `api_settings.php` | `settings/my_custom_settings.php`, `settings/custom_*.php` |
+| Endpoint handlers | `api_endpoints.php` | `endpoints/my_custom_endpoints.php`, `endpoints/custom_*.php` |
+| API keys (file mode) | `api_keys.php` | `keys/my_custom_keys.php`, `keys/custom_*.php` |
+| API keys (DB mode) | `api_keys.php` → `ApiKeyStore` | `data/api.db` or Turso; manage via `bin/api-keys.php` |
+| Endpoint name aliases | `api_aliases.php` | `aliases/my_custom_aliases.php`, `aliases/custom_*.php` |
+
+`api_includes.php` is an optional alternate bootstrap: if a root-level `custom_api_*.php` exists, it is loaded instead of the matching `api_*.php` file (useful for local overrides without touching tracked core files).
+
+### Directory layout
+
+```
+php_api/
+├── index.php                 # HTTP entry — routing, validation, JSON output
+├── api_settings.php          # Loads settings/*.php → PHP constants
+├── api_base.php              # Auth, cooldown, logging, callFunction, api_response
+├── api_endpoints.php         # Loads endpoints/*.php → api_*() functions
+├── api_keys.php              # Loads keys → API_KEYS constant
+├── api_aliases.php           # Loads aliases/*.php → ENDPOINT_ALIASES
+├── api_gui.php               # Optional dev UI (endpoint browser)
+├── api_keys_gui.php          # Optional admin UI for DB-backed keys
+│
+├── settings/                 # Configuration overrides
+│   ├── default_settings.php  # Documented defaults (loaded last in chain)
+│   └── my_custom_settings.php / custom_*.php
+│
+├── endpoints/                # Your API handlers (api_foo → ?endpoint=foo)
+│   ├── my_custom_endpoints.php
+│   ├── custom_*.php
+│   └── examples/             # Sample endpoints (e.g. quote_funfact)
+│
+├── keys/                     # Legacy plaintext keys (KEY_STORE_DRIVER=php)
+│   └── my_custom_keys.php / custom_*.php
+│
+├── aliases/                  # Map alias names → canonical endpoint names
+│   └── my_custom_aliases.php / custom_*.php
+│
+├── lib/
+│   ├── bootstrap.php         # getApiKeyStore(), auth header helpers
+│   ├── ApiKeyStore.php       # SQLite / Turso key storage (hashed)
+│   └── endpoint_discovery.php
+│
+├── bin/
+│   ├── api-keys.php          # CLI: list, create, disable keys (DB mode)
+│   └── migrate-keys.php      # Import keys/*.php → database
+│
+├── data/                     # SQLite DB (gitignored; created at runtime)
+└── tests/                    # PHPUnit (ApiKeyStore, auth helpers)
+```
 
 <!-- ─────────────────────────────────────────────────────────────────────── -->
 <!--                               Configuring                               -->
