@@ -71,6 +71,9 @@ do {
         "CORS_ALLOW_ORIGIN"            => "*",
 
         "ENABLE_API_GUI"               => False,
+        "ENABLE_API_KEYS_GUI"          => False,
+        // Bcrypt hash or plaintext; env API_KEYS_ADMIN_PASSWORD takes precedence
+        "API_KEYS_ADMIN_PASSWORD"      => "",
 
         /* ───────────────────────────────────────────────────────────────────── */
         /*                           API Key Store                               */

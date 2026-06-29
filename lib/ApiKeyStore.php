@@ -225,6 +225,31 @@ SQL;
         return $keys;
     }
 
+    /** @return list<array{name: string, enabled: bool, options: array<string, mixed>, created_at: string, last_used_at: ?string}> */
+    public function listDetailed(): array
+    {
+        $rows = $this->fetchAll(
+            'SELECT name, options, enabled, created_at, last_used_at FROM api_keys ORDER BY name'
+        );
+        $keys = [];
+
+        foreach ($rows as $row) {
+            $options = json_decode($row['options'], true);
+            if (!is_array($options)) {
+                $options = [];
+            }
+            $keys[] = [
+                'name' => $row['name'],
+                'enabled' => (bool) $row['enabled'],
+                'options' => $options,
+                'created_at' => $row['created_at'],
+                'last_used_at' => $row['last_used_at'],
+            ];
+        }
+
+        return $keys;
+    }
+
     /** @param array<string, mixed> $options */
     public function create(string $name, string $key, array $options = []): void
     {

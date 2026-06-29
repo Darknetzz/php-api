@@ -56,6 +56,27 @@ final class ApiKeyStoreTest extends TestCase
         $this->assertTrue($all['alpha']['options']['noTimeOut']);
     }
 
+    public function testListDetailed(): void
+    {
+        $this->store->create('alpha', 'key-alpha', ['allowedEndpoints' => ['datetime']]);
+        $this->store->create('beta', 'key-beta');
+        $this->store->disable('beta');
+
+        $all = $this->store->listDetailed();
+        $this->assertCount(2, $all);
+
+        $alpha = $all[0];
+        $this->assertSame('alpha', $alpha['name']);
+        $this->assertTrue($alpha['enabled']);
+        $this->assertSame(['datetime'], $alpha['options']['allowedEndpoints']);
+        $this->assertNotEmpty($alpha['created_at']);
+        $this->assertNull($alpha['last_used_at']);
+
+        $beta = $all[1];
+        $this->assertSame('beta', $beta['name']);
+        $this->assertFalse($beta['enabled']);
+    }
+
     public function testHashKeyDeterministic(): void
     {
         $hash = ApiKeyStore::hashKey('my-key');

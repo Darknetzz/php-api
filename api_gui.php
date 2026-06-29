@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 
+<?php require_once __DIR__ . '/api_settings.php'; ?>
+
 <html lang="en">
 
 <head>
@@ -16,7 +18,12 @@
 <body data-bs-theme="dark">
 
     <div class="container pt-5">
-        <h1>API Endpoints</h1>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="mb-0">API Endpoints</h1>
+            <?php if (defined('ENABLE_API_KEYS_GUI') && ENABLE_API_KEYS_GUI === true && defined('KEY_STORE_DRIVER') && KEY_STORE_DRIVER !== 'php'): ?>
+                <a href="api_keys_gui.php" class="btn btn-outline-primary btn-sm">Manage API Keys</a>
+            <?php endif; ?>
+        </div>
         <p>List of available API endpoints:</p>
         <ul>
             <?php 
