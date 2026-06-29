@@ -271,6 +271,14 @@ function keysGuiRenderPage(string $title, string $body, bool $openEditModal = fa
         [data-bs-theme="dark"] .ts-wrapper .ts-dropdown .option.active {
             background-color: rgba(32, 107, 196, 0.25);
         }
+        [data-bs-theme="dark"] .modal-backdrop {
+            --tblr-backdrop-bg: #000;
+            --tblr-backdrop-opacity: 0.62;
+        }
+        [data-bs-theme="dark"] .modal-content {
+            background-color: var(--tblr-bg-surface, #1f2937);
+            border: 1px solid var(--tblr-border-color, rgba(255, 255, 255, 0.08));
+        }
     </style>
 </head>
 <body data-bs-theme="dark">
