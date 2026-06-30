@@ -378,7 +378,7 @@ function api_response(string $status, mixed $data) : string {
     log_write("api_response(): The API responded with a status of $status.");
 
     $pretty_print = JSON_UNESCAPED_UNICODE;
-    if (!var_assert($params['compact'], true)) {
+    if (!var_assert($params['compact'], 'true')) {
         $pretty_print = JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT;
     }
 
@@ -461,9 +461,6 @@ function api_response(string $status, mixed $data) : string {
 /*                                  NOTE: Function callFunction */
 /* ────────────────────────────────────────────────────────────────────────── */
 function callFunction(string $func, array $params = []) {
-
-    $logParams = redactSensitiveParams($params);
-    log_write("Attempting to call function $func with parameters: ".json_encode($logParams), 'verbose');
 
     try {
         
@@ -551,6 +548,9 @@ function callFunction(string $func, array $params = []) {
             $valid_apikey = null;
         }
         /* ────────────────────────────────────────────────────────────────────────── */
+
+        $logParams = redactSensitiveParams($params);
+        log_write("Attempting to call function $func with parameters: ".json_encode($logParams), 'verbose');
 
         $paramsClean = [];
         foreach ($params as $paramName => $paramValue) {
