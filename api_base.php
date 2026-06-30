@@ -244,6 +244,10 @@ function log_write($txt, $level = 'info') {
             die(err("You have specified a LOG_LEVEL that doesn't exist in the LOG_LEVELS array: ".$log_level." not in ".implode(', ', array_keys(LOG_LEVELS))));
         }
 
+        if (!array_key_exists($level, LOG_LEVELS)) {
+            $level = 'INFO';
+        }
+
         $thisLevel = LOG_LEVELS[$level];
         $myLevel   = LOG_LEVELS[$log_level];
 

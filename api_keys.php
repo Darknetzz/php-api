@@ -11,6 +11,8 @@ if (defined('API_KEYS')) {
     ");
 }
 
+require_once dirname(__FILE__) . '/lib/bootstrap.php';
+
 $apikeys = [];
 $keyStore = getApiKeyStore();
 
