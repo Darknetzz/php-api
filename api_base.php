@@ -47,11 +47,11 @@ function var_assert(mixed &$var, mixed $assertVal = false, bool $lazy = false) :
     if (!isset($var)) {
         return false;
     }
-    if ($var === '' || $var === null) {
-        return false;
-    }
 
     if ($assertVal != false || func_num_args() > 1) {
+        if ($var === '' || $var === null) {
+            return false;
+        }
 
         if ($lazy != false) {
             return $var == $assertVal;
@@ -59,8 +59,34 @@ function var_assert(mixed &$var, mixed $assertVal = false, bool $lazy = false) :
 
         return $var === $assertVal;
     }
-    
+
+    if ($var === '' || $var === null || $var === false) {
+        return false;
+    }
+    if (is_array($var) && $var === []) {
+        return false;
+    }
+    if ($var === 0 || $var === 0.0 || $var === '0') {
+        return false;
+    }
+
     return true;
+}
+
+/** True when a request flag is enabled (compact, verbose, clean, etc.). */
+function requestFlagEnabled(mixed $value): bool
+{
+    if (!isset($value) || $value === '' || $value === null) {
+        return false;
+    }
+    if ($value === false || $value === 0 || $value === '0' || $value === 'false') {
+        return false;
+    }
+    if ($value === true || $value === 1 || $value === '1' || $value === 'true') {
+        return true;
+    }
+
+    return false;
 }
 
 
@@ -378,7 +404,7 @@ function api_response(string $status, mixed $data) : string {
     log_write("api_response(): The API responded with a status of $status.");
 
     $pretty_print = JSON_UNESCAPED_UNICODE;
-    if (!var_assert($params['compact'], 'true')) {
+    if (!requestFlagEnabled($params['compact'] ?? null)) {
         $pretty_print = JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT;
     }
 
@@ -433,7 +459,7 @@ function api_response(string $status, mixed $data) : string {
 
 
     # verboseinfo
-    if (var_assert($params['verbose'], 'true')) {
+    if (requestFlagEnabled($params['verbose'] ?? null)) {
         if (!var_assert($verboseInfo)) {
             $return['data']['response']['verboseInfo'] = "The verbose flag was present, but the content is empty.";
         } else {
@@ -444,7 +470,7 @@ function api_response(string $status, mixed $data) : string {
 
 
     # clean
-    if (var_assert($params['clean'], 'true')) {
+    if (requestFlagEnabled($params['clean'] ?? null)) {
         if (is_array($data['response'])) {
             return err("The 'clean' option for this endpoint is disabled because it returns an array.");
         }
@@ -533,11 +559,11 @@ function callFunction(string $func, array $params = []) {
                 die(err("You do not have access to this endpoint.", 403));
             }
 
-            # Sleep
+            # Sleep ($sleep is configured in seconds)
             if (!empty($apikey_options["sleep"])) {
                 $sleep = $apikey_options["sleep"];
                 if ($sleep > 0) {
-                    usleep($sleep * 1000000);
+                    usleep((int) ($sleep * 1000000));
                 }
             }
 
