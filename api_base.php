@@ -3,15 +3,13 @@
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                                   api_base.php                             */
 /* ────────────────────────────────────────────────────────────────────────── */
+/* ──────── Made with ❤️ by darknetzz @ https://github.com/darknetzz ──────── */
+/*
+    Core API functions (auth, logging, callFunction, response formatting).
+    Prefer changing `settings/` over editing this file.
+*/
 
 require_once __DIR__ . '/lib/bootstrap.php';
-/* ──────── Made with ❤️ by darknetzz @ https://github.com/darknetzz ──────── */
-/* ────────────────────────────────────────────────────────────────────────── */
-/* 
-    This file contains the API base functions - in other words essential functions
-    for the API to work. You can of course tweak it however you want, but most of the config
-    should be done in `settings` and not here, unless you know what you're doing.
-*/
 
 
 
@@ -233,7 +231,14 @@ function log_write($txt, $level = 'info') {
     }
     try {
         global $apikey_logging;
-        if (!isset($apikey_logging) || $apikey_logging !== true) {
+        if (!isset($apikey_logging)) {
+            $apikey_logging = (bool) (
+                defined('APIKEY_DEFAULT_OPTIONS') && is_array(APIKEY_DEFAULT_OPTIONS)
+                    ? (APIKEY_DEFAULT_OPTIONS['log_write'] ?? true)
+                    : true
+            );
+        }
+        if ($apikey_logging !== true) {
             return;
         }
         $level        = strtoupper($level);
