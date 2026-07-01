@@ -41,7 +41,7 @@ function err(string $text, int $statusCode = 500, bool $fatal = true) {
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                                  NOTE: Function var_assert */
 /* ────────────────────────────────────────────────────────────────────────── */
-function var_assert(mixed &$var, mixed $assertVal = false, bool $lazy = false) : bool {
+function var_assert(mixed $var, mixed $assertVal = false, bool $lazy = false) : bool {
     if (!isset($var)) {
         return false;
     }
@@ -442,7 +442,7 @@ function api_response(string $status, mixed $data) : string {
 
 
     # filter (httpCode / status / data)
-    if (var_assert($params['filter'])) {
+    if (var_assert($params['filter'] ?? null)) {
 
         $filter = $params['filter'];
         if (!var_assert($return[$filter])) {
@@ -456,7 +456,7 @@ function api_response(string $status, mixed $data) : string {
 
 
     # filterdata (endpoint output filtering)
-    if (var_assert($params['filterdata'])) {
+    if (var_assert($params['filterdata'] ?? null)) {
         $filterdata = array_map('trim', explode(",", $params['filterdata']));
 
         $allFilters = [];
@@ -518,7 +518,7 @@ function callFunction(string $func, array $params = []) {
         $valid_apikey   = null;
 
         # Check for endpoint param
-        if (!var_assert($params["endpoint"])) {
+        if (!var_assert($params["endpoint"] ?? null)) {
             die(err("No endpoint was provided"));
         }
 
@@ -532,7 +532,7 @@ function callFunction(string $func, array $params = []) {
         /* ────────────────────────────────────────────────────────────────────────── */
         if (!endpoint_open($endpoint)) {
 
-            if (!var_assert($params['apikey'])) {
+            if (!var_assert($params['apikey'] ?? null)) {
                 die(err("Missing required API key."));
             }
 
