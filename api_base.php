@@ -295,6 +295,9 @@ function log_write($txt, $level = 'info') {
         if (flock($fh, LOCK_EX)) {
             fwrite($fh, $line);
             flock($fh, LOCK_UN);
+        } else {
+            fclose($fh);
+            die(err("Unable to acquire lock on log file: $log_file"));
         }
         fclose($fh);
         return;
@@ -419,10 +422,10 @@ function api_response(string $status, mixed $data) : string {
 
     log_write("api_response(): The API responded with a status of $status.");
 
-    $pretty_print = JSON_UNESCAPED_UNICODE;
-    // Default: pretty-printed JSON. ?compact=true disables pretty-print (compact output).
-    if (!requestFlagEnabled($params['compact'] ?? null)) {
-        $pretty_print = JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT;
+    $pretty_print = JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT;
+    // ?compact=true disables pretty-print (compact output).
+    if (requestFlagEnabled($params['compact'] ?? null)) {
+        $pretty_print = JSON_UNESCAPED_UNICODE;
     }
 
     if (!array_key_exists($status, HTTP_STATUS_CODES)) {
@@ -660,9 +663,9 @@ function callFunction(string $func, array $params = []) {
                 $notify = API_KEYS[$valid_apikey]['options']['notify'] === true;
             }
             if (!empty($valid_apikey) && $notify) {
-                api_sms(NOTIFY_NUMBER, "API Called by $valid_apikey: $params[endpoint]");
+                api_sms(NOTIFY_NUMBER, "API Called by $valid_apikey: {$params['endpoint']}");
             } elseif (empty($valid_apikey)) {
-                api_sms(NOTIFY_NUMBER, "API Called by ".userIP().": $params[endpoint]");
+                api_sms(NOTIFY_NUMBER, "API Called by ".userIP().": {$params['endpoint']}");
             }
         }
 
