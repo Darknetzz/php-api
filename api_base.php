@@ -169,11 +169,18 @@ function endpoint_open(string $endpoint) {
         }
     }
     if (WHITELIST_MODE == False) {
-        $protected = array_map(function ($e) {
-            return (strpos($e, 'api_') === 0) ? $e : 'api_' . $e;
-        }, PROTECTED_ENDPOINTS);
-        $normalized = (strpos($endpoint, 'api_') === 0) ? $endpoint : 'api_' . $endpoint;
-        return !in_array($normalized, $protected, true);
+        // Blacklist mode: open by default; only PROTECTED_ENDPOINTS require auth.
+        $normalizedEndpoint = (strpos($endpoint, 'api_') === 0) ? $endpoint : 'api_' . $endpoint;
+        foreach (PROTECTED_ENDPOINTS as $protep) {
+            $normalizedProtected = (strpos($protep, 'api_') === 0) ? $protep : 'api_' . $protep;
+            if ($endpoint === $protep
+                || 'api_' . $endpoint === $protep
+                || $normalizedEndpoint === $normalizedProtected) {
+                return false;
+            }
+        }
+
+        return true;
     }
     return false;
 }

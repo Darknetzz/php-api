@@ -16,6 +16,9 @@ if ($aliases_files === []) {
 $endpoint_aliases = [];
 
 $loadFile = function (string $file) use (&$endpoint_aliases): void {
+    if (!is_file($file)) {
+        return;
+    }
     $aliases = null;
     require $file;
     if (!isset($aliases) || !is_array($aliases)) {
@@ -36,7 +39,10 @@ $customFiles = array_filter(
 );
 
 if ($customFiles === []) {
-    $loadFile($aliases_folder . '/my_custom_aliases.php');
+    $fallback = $aliases_folder . '/my_custom_aliases.php';
+    if (is_file($fallback)) {
+        $loadFile($fallback);
+    }
 } else {
     foreach ($customFiles as $file) {
         $loadFile($file);
