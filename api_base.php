@@ -408,6 +408,7 @@ function api_response(string $status, mixed $data) : string {
     log_write("api_response(): The API responded with a status of $status.");
 
     $pretty_print = JSON_UNESCAPED_UNICODE;
+    // Default: pretty-printed JSON. ?compact=true disables pretty-print (compact output).
     if (!requestFlagEnabled($params['compact'] ?? null)) {
         $pretty_print = JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT;
     }
