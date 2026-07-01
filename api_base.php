@@ -13,9 +13,14 @@ require_once __DIR__ . '/lib/bootstrap.php';
 
 
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                  NOTE: Function err */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Build a JSON error payload and set the HTTP status code.
+ *
+ * In production mode, 5xx messages are replaced with a generic string.
+ * The original message is always written to the log at verbose level.
+ *
+ * @return string JSON-encoded error response (httpCode, status, data)
+ */
 function err(string $text, int $statusCode = 500, bool $fatal = true) {
     // Security: Sanitize error messages in production to avoid information disclosure
     $sanitized_text = $text;
@@ -38,9 +43,16 @@ function err(string $text, int $statusCode = 500, bool $fatal = true) {
 }
 
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                  NOTE: Function var_assert */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Test whether a value is present and non-empty, optionally comparing to an expected value.
+ *
+ * With no second argument, treats empty string, null, false, 0, '0', and empty arrays as false.
+ * When $assertVal is provided (or a second argument is passed), compares against it instead.
+ *
+ * @param mixed $assertVal Expected value; pass false and omit to run the default emptiness check
+ * @param bool  $lazy      Use loose (==) instead of strict (===) comparison when $assertVal is set
+ * @return bool
+ */
 function var_assert(mixed $var, mixed $assertVal = false, bool $lazy = false) : bool {
     if (!isset($var)) {
         return false;
@@ -71,7 +83,13 @@ function var_assert(mixed $var, mixed $assertVal = false, bool $lazy = false) : 
     return true;
 }
 
-/** True when a request flag is enabled (compact, verbose, clean, etc.). */
+/**
+ * True when a request flag is enabled (compact, verbose, clean, etc.).
+ *
+ * Accepts true/1/'1'/'true' as enabled; false/0/'0'/'false'/empty as disabled.
+ *
+ * @return bool
+ */
 function requestFlagEnabled(mixed $value): bool
 {
     if (!isset($value) || $value === '' || $value === null) {
@@ -89,9 +107,14 @@ function requestFlagEnabled(mixed $value): bool
 
 
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                 Get user IP                                */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Resolve the client IP address for the current request.
+ *
+ * Uses REMOTE_ADDR by default. When TRUST_PROXY is true, may use the first
+ * valid address from X-Forwarded-For (respecting ALLOW_PRIVATE_IPS).
+ *
+ * @return string Client IP
+ */
 function userIP() {
     // Security: Only trust X-Forwarded-For if from trusted proxy
     // Default to REMOTE_ADDR which is more reliable and harder to spoof
@@ -120,9 +143,12 @@ function userIP() {
     die(err("Unable to determine IP"));
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                            Validate JSON decode                            */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Decode a JSON string to a PHP array, returning null on parse failure.
+ *
+ * @param bool $allow_empty When true, an empty string yields [] instead of null
+ * @return array<string, mixed>|null Decoded array, empty array, or null on error
+ */
 function validate_json_decode(string $json_string, bool $allow_empty = true) {
     // Handle empty string case
     if ($json_string === '') {
@@ -139,9 +165,12 @@ function validate_json_decode(string $json_string, bool $allow_empty = true) {
     return $result;
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                               Close file                                   */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Close a file handle, retrying up to a few times if still open.
+ *
+ * @param resource|null $fh File handle passed by reference
+ * @return bool True when the handle is no longer a resource
+ */
 function fh_close(mixed &$fh) {
     $tries = 5;
     $i     = 0;
@@ -157,9 +186,15 @@ function fh_close(mixed &$fh) {
     return !is_resource($fh);
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                endpoint_open                               */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Whether an endpoint may be called without an API key.
+ *
+ * In whitelist mode (WHITELIST_MODE), only OPEN_ENDPOINTS are public.
+ * In blacklist mode, all endpoints are public except PROTECTED_ENDPOINTS.
+ *
+ * @param string $endpoint Endpoint name with or without the api_ prefix
+ * @return bool True when no API key is required
+ */
 function endpoint_open(string $endpoint) {
     if (WHITELIST_MODE == True) {
         foreach (OPEN_ENDPOINTS as $openep) {
@@ -185,9 +220,9 @@ function endpoint_open(string $endpoint) {
     return false;
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                              NOTE: log_write()                             */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Rotate a log file when it exceeds LOG_MAXLINES, keeping LOG_ROTATE_KEEP backups.
+ */
 function rotateLogFileIfNeeded(string $logFile): void
 {
     $maxLines = defined('LOG_MAXLINES') ? (int) LOG_MAXLINES : 1000;
@@ -232,6 +267,15 @@ function rotateLogFileIfNeeded(string $logFile): void
     }
 }
 
+/**
+ * Append a timestamped line to the API log when logging is enabled.
+ *
+ * Respects LOG_ENABLE, the current key's log_write option, LOG_LEVEL filtering,
+ * and sanitizes newlines to prevent log injection.
+ *
+ * @param string $txt   Message to log
+ * @param string $level One of the keys in LOG_LEVELS (defaults to info)
+ */
 function log_write($txt, $level = 'info') {
     if (!defined('LOG_ENABLE') || LOG_ENABLE === false) {
         return;
@@ -306,9 +350,13 @@ function log_write($txt, $level = 'info') {
     }
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                  NOTE: Function funnyResponse */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Build a user-facing error message, optionally randomized when FUNNY_RESPONSES_ENABLE is on.
+ *
+ * @param string               $type Known type: COOLDOWN, WRONG_PARAM_COUNT, ENDPOINT_FALSY
+ * @param array<string, mixed> $vars Context keys such as endpoint, secondsToWait, param counts
+ * @return string User-facing message
+ */
 function funnyResponse(string $type, array $vars = []) : string {
     /* ──────────────────────────── Mandatory checks ──────────────────────────── */
     if (!isset($vars["endpoint"]) || empty($vars["endpoint"])) {
@@ -412,9 +460,15 @@ function funnyResponse(string $type, array $vars = []) : string {
     
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                  NOTE: Function api_response */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Format a successful API response as JSON with optional request-driven shaping.
+ *
+ * Supports compact, filter, filterdata, verbose, and clean query flags.
+ *
+ * @param string               $status HTTP status label (key in HTTP_STATUS_CODES)
+ * @param array<string, mixed> $data   Payload; expects response and optional verboseInfo keys
+ * @return string JSON-encoded response
+ */
 function api_response(string $status, mixed $data) : string {
     
     global $_REQUEST;
@@ -503,9 +557,16 @@ function api_response(string $status, mixed $data) : string {
 }
 
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                  NOTE: Function callFunction */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Dispatch an api_* endpoint: auth, cooldown, reflection, invoke, and respond.
+ *
+ * Validates the API key (unless the endpoint is open), enforces allowed/disallowed
+ * endpoints, sleep/cooldown, required parameters, then invokes the handler via reflection.
+ *
+ * @param string               $func   PHP function name (e.g. api_foo)
+ * @param array<string, mixed> $params Request parameters including endpoint and apikey
+ * @return string JSON from api_response() or err()
+ */
 function callFunction(string $func, array $params = []) {
 
     try {
@@ -685,9 +746,11 @@ function callFunction(string $func, array $params = []) {
     }
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                  NOTE: Function secondsSinceLastCalled */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Ensure the last-called JSON store file and its directory exist.
+ *
+ * @return string Absolute path to LAST_CALLED_JSON
+ */
 function ensureLastCalledJsonFile(): string
 {
     $path = LAST_CALLED_JSON;
@@ -702,7 +765,11 @@ function ensureLastCalledJsonFile(): string
     return $path;
 }
 
-/** @return array<string, mixed> */
+/**
+ * Read the cooldown last-called store under a shared lock.
+ *
+ * @return array<string, mixed> Map of function name → caller key → unix timestamp
+ */
 function readLastCalledStore(): array
 {
     ensureLastCalledJsonFile();
@@ -735,7 +802,11 @@ function readLastCalledStore(): array
     return $lf;
 }
 
-/** @param callable(array<string, mixed>): void $mutator */
+/**
+ * Read, modify, and persist the last-called store under an exclusive lock.
+ *
+ * @param callable(array<string, mixed>): void $mutator Receives the store array by reference
+ */
 function mutateLastCalledStore(callable $mutator): void
 {
     ensureLastCalledJsonFile();
@@ -773,7 +844,11 @@ function mutateLastCalledStore(callable $mutator): void
     fclose($fh);
 }
 
-/** @param array<string, mixed> $lf */
+/**
+ * Replace the entire last-called store atomically.
+ *
+ * @param array<string, mixed> $lf Full store contents to write
+ */
 function writeLastCalledStore(array $lf): void
 {
     mutateLastCalledStore(static function (array &$store) use ($lf): void {
@@ -781,6 +856,16 @@ function writeLastCalledStore(array $lf): void
     });
 }
 
+/**
+ * Seconds elapsed since this endpoint was last called by the given caller.
+ *
+ * Open endpoints and missing keys are tracked by client IP instead of key name.
+ * Returns a value at least COOLDOWN_TIME in the past when no prior call exists.
+ *
+ * @param string      $function_name Handler function name
+ * @param string|null $valid_apikey  Validated API key name, or null for open/IP tracking
+ * @return int|false  Elapsed seconds, or false on failure
+ */
 function secondsSinceLastCalled($function_name, $valid_apikey = null) {
     try {
         $lf = readLastCalledStore();
@@ -810,9 +895,15 @@ function secondsSinceLastCalled($function_name, $valid_apikey = null) {
     }
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                  NOTE: Function updateLastCalled */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Record the current time as the last call for an endpoint and caller.
+ *
+ * Uses client IP as the caller key when the endpoint is open or no API key is set.
+ *
+ * @param string      $function_name Handler function name
+ * @param string|null $valid_apikey  Validated API key name, or null for open/IP tracking
+ * @return bool True on success
+ */
 function updateLastCalled($function_name, $valid_apikey = null) {
     try {
         $resolvedKey = $valid_apikey;
@@ -838,9 +929,16 @@ function updateLastCalled($function_name, $valid_apikey = null) {
     }
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                  NOTE: Function in_md_array */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Find the top-level key whose nested field matches a value (file-mode API key lookup).
+ *
+ * Uses hash_equals for constant-time comparison of the matched field.
+ *
+ * @param string               $name  Nested field name to compare (e.g. "key")
+ * @param string               $id    Value to match
+ * @param array<string, mixed> $array Key registry (defaults to API_KEYS)
+ * @return string|false Matching key name, or false
+ */
 function in_md_array($name, $id, $array = API_KEYS) {
     if (!is_array($array)) {
         die(err("The API_KEYS constant isn't a valid array."));
@@ -854,9 +952,14 @@ function in_md_array($name, $id, $array = API_KEYS) {
     return false;
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                  NOTE: Function apikey_validate */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Validate an incoming API key and return its registered name.
+ *
+ * Uses ApiKeyStore (hash lookup) when configured; otherwise scans API_KEYS in file mode.
+ *
+ * @param string $apikey Raw key from the request
+ * @return string|false Key name on success, false when invalid or disabled
+ */
 function apikey_validate($apikey) {
     $store = getApiKeyStore();
     if ($store instanceof ApiKeyStore) {
@@ -866,9 +969,15 @@ function apikey_validate($apikey) {
     return in_md_array("key", $apikey);
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                  NOTE: Function addAPIKey */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Register an API key in memory and, when using a DB store, persist it if new.
+ *
+ * Options are merged with APIKEY_DEFAULT_OPTIONS before storage.
+ *
+ * @param string               $name    Human-readable key identifier
+ * @param string               $key     Plaintext secret
+ * @param array<string, mixed> $options allowedEndpoints, cooldown, log_write, etc.
+ */
 function addAPIKey(string $name, string $key, array $options = []) {
     global $apikeys;
 
@@ -887,9 +996,13 @@ function addAPIKey(string $name, string $key, array $options = []) {
     ];
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                                  NOTE: Function endpointExists */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Whether a loaded endpoint handler exists for the given name.
+ *
+ * Accepts names with or without the api_ prefix.
+ *
+ * @return bool
+ */
 function endpointExists(string $endpoint) {
     if (function_exists("api_".$endpoint) || function_exists($endpoint)) {
         return true;
