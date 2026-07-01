@@ -63,7 +63,7 @@ require_once('api_keys.php');
 require_once('api_aliases.php');
 
 # The endpoint should always be provided in GET
-if (!var_assert($_REQUEST['endpoint'])) {
+if (!var_assert($_REQUEST['endpoint'] ?? null)) {
     if (defined('ENABLE_API_GUI') && ENABLE_API_GUI === true && file_exists("api_gui.php")) {
         header('Location: api_gui.php');
         die();

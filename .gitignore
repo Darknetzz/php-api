@@ -2,6 +2,7 @@ custom_*
 *.log
 *.log.*
 *.json
+.nfs*
 endpoints/*
 !endpoints/my_custom_endpoints.php
 !endpoints/examples/
