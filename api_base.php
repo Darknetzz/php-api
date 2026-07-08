@@ -30,6 +30,8 @@ function err(string $text, int $statusCode = 500, bool $fatal = true) {
             $sanitized_text = "Internal server error";
         }
     }
+
+    $sanitized_text = htmlspecialchars($sanitized_text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     
     log_write($text, 'verbose');
     http_response_code($statusCode);
