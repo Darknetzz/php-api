@@ -95,6 +95,16 @@ final class CallFunctionTest extends TestCase
         $this->assertSame(['protected' => true], $decoded['data']['response'] ?? null);
     }
 
+    public function testProtectedEndpointWithTrustedKeyName(): void
+    {
+        $result = callFunction('api_cf_protected', [
+            'endpoint' => 'cf_protected',
+        ], 'cfopen');
+        $decoded = json_decode((string) $result, true);
+        $this->assertSame('OK', $decoded['status'] ?? null);
+        $this->assertSame(['protected' => true], $decoded['data']['response'] ?? null);
+    }
+
     public function testCooldownBlocksRapidRepeat(): void
     {
         $params = [

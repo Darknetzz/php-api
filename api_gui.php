@@ -15,7 +15,6 @@ if (!defined('ENABLE_API_GUI') || ENABLE_API_GUI !== true) {
 
 $keysGuiAuthenticated = false;
 $keysGuiKeyChoices = [];
-$keysGuiVault = [];
 
 if (keysGuiEnabled() && keysGuiAdminPassword() !== '') {
     keysGuiConfigureSession();
@@ -24,18 +23,61 @@ if (keysGuiEnabled() && keysGuiAdminPassword() !== '') {
         require_once __DIR__ . '/lib/bootstrap.php';
         $store = ApiKeyStore::createFromConfig();
         if ($store instanceof ApiKeyStore) {
-            $keysGuiVault = keysGuiVaultGetAll();
             foreach ($store->listDetailed() as $key) {
-                if (!$key['enabled']) {
-                    continue;
+                if ($key['enabled']) {
+                    $keysGuiKeyChoices[] = $key['name'];
                 }
-                $keysGuiKeyChoices[] = [
-                    'name' => $key['name'],
-                    'inVault' => isset($keysGuiVault[$key['name']]),
-                ];
             }
         }
     }
+}
+
+if (isset($_GET['gui_try']) && $_GET['gui_try'] === '1') {
+    header('Content-Type: application/json; charset=UTF-8');
+
+    if (!$keysGuiAuthenticated) {
+        http_response_code(403);
+        echo err('Sign in required to try endpoints with saved keys.', 403);
+        exit;
+    }
+
+    require_once __DIR__ . '/api_keys.php';
+    require_once __DIR__ . '/api_aliases.php';
+
+    $endpointInput = trim((string) ($_GET['endpoint'] ?? ''));
+    $keyName = trim((string) ($_GET['key_name'] ?? ''));
+
+    if ($endpointInput === '' || !preg_match('/^[a-zA-Z0-9_]+$/', $endpointInput)) {
+        http_response_code(400);
+        echo err('Invalid endpoint name.', 400);
+        exit;
+    }
+
+    $endpoint = resolveEndpointName($endpointInput);
+    $func = 'api_' . $endpoint;
+
+    if (!function_exists($func)) {
+        http_response_code(404);
+        echo err("Endpoint not found: $endpointInput", 404);
+        exit;
+    }
+
+    $params = $_GET;
+    unset($params['gui_try'], $params['key_name']);
+    $params['endpoint'] = $endpoint;
+
+    $trustedKeyName = null;
+    if (!endpointIsOpen($endpoint)) {
+        if ($keyName === '') {
+            http_response_code(400);
+            echo err('Select an API key for this endpoint.', 400);
+            exit;
+        }
+        $trustedKeyName = $keyName;
+    }
+
+    echo callFunction($func, $params, $trustedKeyName);
+    exit;
 }
 
 function guiH(string $value): string
@@ -153,20 +195,12 @@ function guiH(string $value): string
                                     <?php if ($keysGuiAuthenticated): ?>
                                         <select class="form-select" id="try-apikey-select">
                                             <option value="">— Select key —</option>
-                                            <?php foreach ($keysGuiKeyChoices as $choice): ?>
-                                                <?php if ($choice['inVault']): ?>
-                                                    <option value="vault:<?= guiH($choice['name']) ?>"><?= guiH($choice['name']) ?></option>
-                                                <?php else: ?>
-                                                    <option value="manual:<?= guiH($choice['name']) ?>"><?= guiH($choice['name']) ?> (paste key)</option>
-                                                <?php endif; ?>
+                                            <?php foreach ($keysGuiKeyChoices as $keyName): ?>
+                                                <option value="<?= guiH($keyName) ?>"><?= guiH($keyName) ?></option>
                                             <?php endforeach; ?>
-                                            <option value="manual">Enter key manually</option>
                                         </select>
-                                        <input type="password" class="form-control mt-2 d-none" id="try-apikey" name="apikey" autocomplete="off" placeholder="Paste API key">
                                         <?php if ($keysGuiKeyChoices === []): ?>
                                             <div class="form-text text-secondary">No enabled keys yet. Create one in Manage API Keys.</div>
-                                        <?php elseif ($keysGuiVault === []): ?>
-                                            <div class="form-text text-secondary">Keys created or rotated this session can be selected directly. Others require pasting the secret once.</div>
                                         <?php endif; ?>
                                     <?php else: ?>
                                         <input type="password" class="form-control" id="try-apikey" name="apikey" autocomplete="off">
@@ -196,7 +230,7 @@ function guiH(string $value): string
         const tryResult = document.getElementById('try-result');
         const tryResultCode = document.getElementById('try-result-code');
         const tryResultAlert = document.getElementById('try-result-alert');
-        const keysGuiVault = <?= $keysGuiAuthenticated ? json_encode($keysGuiVault, JSON_THROW_ON_ERROR) : '{}' ?>;
+        const keysGuiAuthenticated = <?= $keysGuiAuthenticated ? 'true' : 'false' ?>;
 
         function showTryPre() {
             tryResultAlert.classList.add('d-none');
@@ -251,41 +285,14 @@ function guiH(string $value): string
         }
 
         function syncApikeyField(isOpen) {
-            if (!tryApikeySelect || !tryApikey) {
+            if (!tryApikeySelect) {
                 if (tryApikey) {
                     tryApikey.required = !isOpen;
                 }
                 return;
             }
 
-            const selection = tryApikeySelect.value;
-            const usesVault = selection.startsWith('vault:');
-            const usesManual = selection === 'manual' || selection.startsWith('manual:');
-
-            tryApikey.classList.toggle('d-none', !usesManual);
-            tryApikey.required = !isOpen && usesManual;
-            tryApikeySelect.required = !isOpen && !usesVault && selection === '';
-
-            if (usesManual && selection.startsWith('manual:')) {
-                const keyName = selection.slice('manual:'.length);
-                tryApikey.placeholder = 'Paste API key for ' + keyName;
-            } else if (usesManual) {
-                tryApikey.placeholder = 'Paste API key';
-            }
-        }
-
-        function resolveApikeyValue() {
-            if (!tryApikeySelect) {
-                return tryApikey ? tryApikey.value : '';
-            }
-
-            const selection = tryApikeySelect.value;
-            if (selection.startsWith('vault:')) {
-                const keyName = selection.slice('vault:'.length);
-                return keysGuiVault[keyName] || '';
-            }
-
-            return tryApikey ? tryApikey.value : '';
+            tryApikeySelect.required = !isOpen && tryApikeySelect.value === '';
         }
 
         if (tryApikeySelect) {
@@ -345,10 +352,6 @@ function guiH(string $value): string
             event.preventDefault();
             const params = new URLSearchParams();
             params.set('endpoint', tryEndpoint.value);
-            const apikey = resolveApikeyValue();
-            if (apikey) {
-                params.set('apikey', apikey);
-            }
             tryParams.querySelectorAll('input[data-param-name]').forEach(function (input) {
                 if (input.value !== '') {
                     params.set(input.dataset.paramName, input.value);
@@ -356,7 +359,20 @@ function guiH(string $value): string
             });
             setTryResultPlain('Loading...', 'loading');
             try {
-                const response = await fetch('index.php?' + params.toString());
+                let url;
+                if (keysGuiAuthenticated) {
+                    params.set('gui_try', '1');
+                    if (tryApikeySelect && tryApikeySelect.value) {
+                        params.set('key_name', tryApikeySelect.value);
+                    }
+                    url = 'api_gui.php?' + params.toString();
+                } else {
+                    if (tryApikey && tryApikey.value) {
+                        params.set('apikey', tryApikey.value);
+                    }
+                    url = 'index.php?' + params.toString();
+                }
+                const response = await fetch(url);
                 const text = await response.text();
                 try {
                     setTryResultJson(JSON.parse(text));

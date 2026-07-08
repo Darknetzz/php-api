@@ -565,9 +565,10 @@ function api_response(string $status, mixed $data) : string {
  *
  * @param string               $func   PHP function name (e.g. api_foo)
  * @param array<string, mixed> $params Request parameters including endpoint and apikey
+ * @param string|null          $trustedKeyName Registered key name for trusted internal dispatch (e.g. GUI admin)
  * @return string JSON from api_response() or err()
  */
-function callFunction(string $func, array $params = []) {
+function callFunction(string $func, array $params = [], ?string $trustedKeyName = null) {
 
     try {
         global $apikey_logging;
@@ -597,23 +598,30 @@ function callFunction(string $func, array $params = []) {
         /* ────────────────────────────────────────────────────────────────────────── */
         if (!endpoint_open($endpoint)) {
 
-            if (!var_assert($params['apikey'] ?? null)) {
-                die(err("Missing required API key."));
-            }
-
-            # API key was provided
-            $apikey = null;
-            foreach (['apikey', 'api_key', 'key'] as $candidate) {
-                if (isset($params[$candidate]) && $params[$candidate] !== '') {
-                    $apikey = $params[$candidate];
-                    break;
+            if ($trustedKeyName !== null && $trustedKeyName !== '') {
+                $valid_apikey = resolveTrustedApiKeyName($trustedKeyName);
+                if ($valid_apikey === false) {
+                    die(err("Invalid API key", 403));
                 }
-            }
-            $valid_apikey = apikey_validate($apikey);
+            } else {
+                if (!var_assert($params['apikey'] ?? null)) {
+                    die(err("Missing required API key."));
+                }
 
-            # Invalid API key
-            if (!$valid_apikey || empty($valid_apikey)) {
-                die(err("Invalid API key", 403));
+                # API key was provided
+                $apikey = null;
+                foreach (['apikey', 'api_key', 'key'] as $candidate) {
+                    if (isset($params[$candidate]) && $params[$candidate] !== '') {
+                        $apikey = $params[$candidate];
+                        break;
+                    }
+                }
+                $valid_apikey = apikey_validate($apikey);
+
+                # Invalid API key
+                if (!$valid_apikey || empty($valid_apikey)) {
+                    die(err("Invalid API key", 403));
+                }
             }
 
 
@@ -951,6 +959,33 @@ function in_md_array($name, $id, $array = API_KEYS) {
         }
     }
     return false;
+}
+
+/**
+ * Resolve a registered API key name for trusted internal dispatch (GUI admin only).
+ *
+ * @return string|false Key name on success
+ */
+function resolveTrustedApiKeyName(string $keyName): string|false
+{
+    $keyName = trim($keyName);
+    if ($keyName === '' || !defined('API_KEYS') || !is_array(API_KEYS)) {
+        return false;
+    }
+
+    if (!isset(API_KEYS[$keyName]) || empty(API_KEYS[$keyName]['options'])) {
+        return false;
+    }
+
+    $store = getApiKeyStore();
+    if ($store instanceof ApiKeyStore) {
+        $row = $store->getByName($keyName);
+        if ($row === null || !$row['enabled']) {
+            return false;
+        }
+    }
+
+    return $keyName;
 }
 
 /**
