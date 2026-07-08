@@ -1,5 +1,3 @@
-<!DOCTYPE html>
-
 <?php
 require_once __DIR__ . '/api_settings.php';
 require_once __DIR__ . '/api_base.php';
@@ -86,6 +84,7 @@ function guiH(string $value): string
 }
 ?>
 
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -324,12 +323,15 @@ function guiH(string $value): string
                 wrap.className = 'mb-2';
                 const label = document.createElement('label');
                 label.className = 'form-label';
+                label.setAttribute('for', 'param-' + param.name);
                 label.textContent = param.name + (param.optional ? ' (optional)' : '');
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.className = 'form-control';
+                input.id = 'param-' + param.name;
                 input.name = 'param_' + param.name;
                 input.dataset.paramName = param.name;
+                input.required = !param.optional;
                 if (param.optional && param.default !== null && param.default !== undefined) {
                     input.placeholder = 'default: ' + String(param.default);
                 }
