@@ -570,6 +570,7 @@ function api_response(string $status, mixed $data) : string {
 function callFunction(string $func, array $params = []) {
 
     try {
+        global $apikey_logging;
         
         /* ────────────────────────────────────────────────────────────────────────── */
         /*                               Initial checks                               */
@@ -578,7 +579,7 @@ function callFunction(string $func, array $params = []) {
         # defaults
         $apikey         = null;
         $apikey_options = null;
-        $apikey_logging = null;
+        unset($apikey_logging);
         $valid_apikey   = null;
 
         # Check for endpoint param
@@ -628,7 +629,7 @@ function callFunction(string $func, array $params = []) {
             if (!isset($apikey_options['log_write'])) {
                 die(err("Option 'log_write' not specified for this API key."));
             }
-            $GLOBALS['apikey_logging'] = (bool) $apikey_options['log_write'];
+            $apikey_logging = (bool) $apikey_options['log_write'];
 
             # Check if this key is specifically disallowed
             if (in_array($endpoint, $apikey_options["disallowedEndpoints"])) {
@@ -651,7 +652,7 @@ function callFunction(string $func, array $params = []) {
         } else {
             # Open endpoint: merge defaults so cooldown/logging checks have all keys
             $apikey_options = ApiKeyStore::mergeDefaultOptions([]);
-            $GLOBALS['apikey_logging'] = (bool) ($apikey_options['log_write'] ?? false);
+            $apikey_logging = (bool) ($apikey_options['log_write'] ?? false);
             $valid_apikey = null;
         }
         /* ────────────────────────────────────────────────────────────────────────── */
