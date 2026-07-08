@@ -2,24 +2,7 @@
 
 require_once __DIR__ . '/api_settings.php';
 require_once __DIR__ . '/lib/bootstrap.php';
-
-function keysGuiEnabled(): bool
-{
-    return defined('ENABLE_API_KEYS_GUI')
-        && ENABLE_API_KEYS_GUI === true
-        && defined('KEY_STORE_DRIVER')
-        && KEY_STORE_DRIVER !== 'php';
-}
-
-function keysGuiAdminPassword(): string
-{
-    $env = getenv('API_KEYS_ADMIN_PASSWORD');
-    if ($env !== false && $env !== '') {
-        return $env;
-    }
-
-    return defined('API_KEYS_ADMIN_PASSWORD') ? (string) API_KEYS_ADMIN_PASSWORD : '';
-}
+require_once __DIR__ . '/lib/keys_gui_session.php';
 
 function keysGuiVerifyPassword(string $input, string $stored): bool
 {
@@ -71,21 +54,6 @@ function keysGuiFlashGet(): ?array
     unset($_SESSION['keys_gui_flash']);
 
     return $flash;
-}
-
-function keysGuiConfigureSession(): void
-{
-    if (session_status() !== PHP_SESSION_NONE) {
-        return;
-    }
-
-    ini_set('session.use_strict_mode', '1');
-    ini_set('session.cookie_httponly', '1');
-    ini_set('session.cookie_samesite', 'Strict');
-    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443);
-    ini_set('session.cookie_secure', $secure ? '1' : '0');
-    session_start();
 }
 
 function keysGuiLoginThrottled(): bool
@@ -380,7 +348,7 @@ if (isset($_GET['logout'])) {
     exit;
 }
 
-$authenticated = !empty($_SESSION['keys_gui_auth']);
+$authenticated = keysGuiIsAuthenticated();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'login') {
     if (keysGuiLoginThrottled()) {
@@ -416,6 +384,7 @@ if ($authenticated && $_SERVER['REQUEST_METHOD'] === 'POST' && keysGuiValidateCs
             $options = array_merge(['allowedEndpoints' => $allowedEndpoints], $optionPatch);
             $key = ApiKeyStore::generateKey();
             $store->create($name, $key, $options);
+            keysGuiVaultSet($name, $key);
             keysGuiFlashSet('success', "Created key <strong>" . keysGuiH($name) . "</strong>. Copy it now — it will not be shown again:<br><code class='user-select-all'>" . keysGuiH($key) . "</code>");
         }
         header('Location: api_keys_gui.php');
@@ -473,6 +442,7 @@ if ($authenticated && $_SERVER['REQUEST_METHOD'] === 'POST' && keysGuiValidateCs
         if ($name !== '' && $store->exists($name)) {
             try {
                 $newKey = $store->rotate($name);
+                keysGuiVaultSet($name, $newKey);
                 keysGuiFlashSet('success', "Rotated key <strong>" . keysGuiH($name) . "</strong>. Copy the new secret now:<br><code class='user-select-all'>" . keysGuiH($newKey) . "</code>");
             } catch (InvalidArgumentException $e) {
                 keysGuiFlashSet('danger', $e->getMessage());

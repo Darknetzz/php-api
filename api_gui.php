@@ -5,11 +5,37 @@ require_once __DIR__ . '/api_settings.php';
 require_once __DIR__ . '/api_base.php';
 require_once __DIR__ . '/api_endpoints.php';
 require_once __DIR__ . '/lib/endpoint_discovery.php';
+require_once __DIR__ . '/lib/keys_gui_session.php';
 
 if (!defined('ENABLE_API_GUI') || ENABLE_API_GUI !== true) {
     http_response_code(404);
     echo 'Not found.';
     exit;
+}
+
+$keysGuiAuthenticated = false;
+$keysGuiKeyChoices = [];
+$keysGuiVault = [];
+
+if (keysGuiEnabled() && keysGuiAdminPassword() !== '') {
+    keysGuiConfigureSession();
+    $keysGuiAuthenticated = keysGuiIsAuthenticated();
+    if ($keysGuiAuthenticated) {
+        require_once __DIR__ . '/lib/bootstrap.php';
+        $store = ApiKeyStore::createFromConfig();
+        if ($store instanceof ApiKeyStore) {
+            $keysGuiVault = keysGuiVaultGetAll();
+            foreach ($store->listDetailed() as $key) {
+                if (!$key['enabled']) {
+                    continue;
+                }
+                $keysGuiKeyChoices[] = [
+                    'name' => $key['name'],
+                    'inVault' => isset($keysGuiVault[$key['name']]),
+                ];
+            }
+        }
+    }
 }
 
 function guiH(string $value): string
@@ -58,8 +84,13 @@ function guiH(string $value): string
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="mb-0">API Endpoints</h1>
             <div>
-                <?php if (defined('ENABLE_API_KEYS_GUI') && ENABLE_API_KEYS_GUI === true && defined('KEY_STORE_DRIVER') && KEY_STORE_DRIVER !== 'php'): ?>
-                    <a href="api_keys_gui.php" class="btn btn-outline-primary btn-sm">Manage API Keys</a>
+                <?php if (keysGuiEnabled() && keysGuiAdminPassword() !== ''): ?>
+                    <?php if ($keysGuiAuthenticated): ?>
+                        <a href="api_keys_gui.php" class="btn btn-outline-primary btn-sm">Manage API Keys</a>
+                        <a href="api_keys_gui.php?logout=1" class="btn btn-outline-secondary btn-sm">Sign out</a>
+                    <?php else: ?>
+                        <a href="api_keys_gui.php" class="btn btn-outline-primary btn-sm">Sign in to select keys</a>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>
@@ -117,9 +148,29 @@ function guiH(string $value): string
                                     <label class="form-label" for="try-endpoint">Endpoint</label>
                                     <input type="text" class="form-control" id="try-endpoint" name="endpoint" required>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label" for="try-apikey">API key <span class="text-secondary">(if required)</span></label>
-                                    <input type="password" class="form-control" id="try-apikey" name="apikey" autocomplete="off">
+                                <div class="col-md-6" id="try-apikey-wrap">
+                                    <label class="form-label" for="<?= $keysGuiAuthenticated ? 'try-apikey-select' : 'try-apikey' ?>">API key <span class="text-secondary">(if required)</span></label>
+                                    <?php if ($keysGuiAuthenticated): ?>
+                                        <select class="form-select" id="try-apikey-select">
+                                            <option value="">— Select key —</option>
+                                            <?php foreach ($keysGuiKeyChoices as $choice): ?>
+                                                <?php if ($choice['inVault']): ?>
+                                                    <option value="vault:<?= guiH($choice['name']) ?>"><?= guiH($choice['name']) ?></option>
+                                                <?php else: ?>
+                                                    <option value="manual:<?= guiH($choice['name']) ?>"><?= guiH($choice['name']) ?> (paste key)</option>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
+                                            <option value="manual">Enter key manually</option>
+                                        </select>
+                                        <input type="password" class="form-control mt-2 d-none" id="try-apikey" name="apikey" autocomplete="off" placeholder="Paste API key">
+                                        <?php if ($keysGuiKeyChoices === []): ?>
+                                            <div class="form-text text-secondary">No enabled keys yet. Create one in Manage API Keys.</div>
+                                        <?php elseif ($keysGuiVault === []): ?>
+                                            <div class="form-text text-secondary">Keys created or rotated this session can be selected directly. Others require pasting the secret once.</div>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <input type="password" class="form-control" id="try-apikey" name="apikey" autocomplete="off">
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <div class="mb-3 mt-3" id="try-params"></div>
@@ -140,10 +191,12 @@ function guiH(string $value): string
         const tryForm = document.getElementById('try-form');
         const tryEndpoint = document.getElementById('try-endpoint');
         const tryApikey = document.getElementById('try-apikey');
+        const tryApikeySelect = document.getElementById('try-apikey-select');
         const tryParams = document.getElementById('try-params');
         const tryResult = document.getElementById('try-result');
         const tryResultCode = document.getElementById('try-result-code');
         const tryResultAlert = document.getElementById('try-result-alert');
+        const keysGuiVault = <?= $keysGuiAuthenticated ? json_encode($keysGuiVault, JSON_THROW_ON_ERROR) : '{}' ?>;
 
         function showTryPre() {
             tryResultAlert.classList.add('d-none');
@@ -197,6 +250,51 @@ function guiH(string $value): string
             );
         }
 
+        function syncApikeyField(isOpen) {
+            if (!tryApikeySelect || !tryApikey) {
+                if (tryApikey) {
+                    tryApikey.required = !isOpen;
+                }
+                return;
+            }
+
+            const selection = tryApikeySelect.value;
+            const usesVault = selection.startsWith('vault:');
+            const usesManual = selection === 'manual' || selection.startsWith('manual:');
+
+            tryApikey.classList.toggle('d-none', !usesManual);
+            tryApikey.required = !isOpen && usesManual;
+            tryApikeySelect.required = !isOpen && !usesVault && selection === '';
+
+            if (usesManual && selection.startsWith('manual:')) {
+                const keyName = selection.slice('manual:'.length);
+                tryApikey.placeholder = 'Paste API key for ' + keyName;
+            } else if (usesManual) {
+                tryApikey.placeholder = 'Paste API key';
+            }
+        }
+
+        function resolveApikeyValue() {
+            if (!tryApikeySelect) {
+                return tryApikey ? tryApikey.value : '';
+            }
+
+            const selection = tryApikeySelect.value;
+            if (selection.startsWith('vault:')) {
+                const keyName = selection.slice('vault:'.length);
+                return keysGuiVault[keyName] || '';
+            }
+
+            return tryApikey ? tryApikey.value : '';
+        }
+
+        if (tryApikeySelect) {
+            tryApikeySelect.addEventListener('change', function () {
+                const activeBtn = document.querySelector('.try-btn[data-endpoint="' + CSS.escape(tryEndpoint.value) + '"]');
+                syncApikeyField(activeBtn ? activeBtn.dataset.open !== '1' : false);
+            });
+        }
+
         searchInput.addEventListener('input', function () {
             const q = this.value.toLowerCase();
             document.querySelectorAll('.endpoint-card').forEach(function (card) {
@@ -237,7 +335,7 @@ function guiH(string $value): string
         document.querySelectorAll('.try-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 tryEndpoint.value = btn.dataset.endpoint;
-                tryApikey.required = btn.dataset.open !== '1';
+                syncApikeyField(btn.dataset.open !== '1');
                 renderParams(JSON.parse(btn.dataset.params || '[]'));
                 setTryResultPlain('Ready to send request.', 'ready');
             });
@@ -247,8 +345,9 @@ function guiH(string $value): string
             event.preventDefault();
             const params = new URLSearchParams();
             params.set('endpoint', tryEndpoint.value);
-            if (tryApikey.value) {
-                params.set('apikey', tryApikey.value);
+            const apikey = resolveApikeyValue();
+            if (apikey) {
+                params.set('apikey', apikey);
             }
             tryParams.querySelectorAll('input[data-param-name]').forEach(function (input) {
                 if (input.value !== '') {
